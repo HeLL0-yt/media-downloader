@@ -4,8 +4,9 @@ MediaGrab is a Python 3.14 desktop application being built for Windows 10/11.
 Its planned download engine uses yt-dlp as a library, FFmpeg for media processing,
 and PySide6 for the interface.
 
-**Current state: Phase 0 project skeleton. Downloads and the desktop application
-are not implemented yet.**
+**Current state: Phase 1 core foundations. Models, validation, FFmpeg discovery,
+and engine options are implemented. Downloads and the desktop application are
+scheduled for later phases.**
 
 ## Planned features
 
@@ -37,21 +38,31 @@ their implementation phases.
 .\.venv\Scripts\python.exe -m ruff check .
 .\.venv\Scripts\python.exe -m ruff format --check .
 $env:QT_QPA_PLATFORM = "offscreen"
-.\.venv\Scripts\python.exe -m pytest
+.\.venv\Scripts\python.exe -m pytest --cov=mediagrab.core --cov-report=term-missing
 ```
 
 Tests marked `network` are skipped unless `--run-network` is passed. The network
 integration test will be added in Phase 2. GUI tests will use pytest-qt and Qt's
-offscreen platform. Core coverage enforcement begins in Phase 1, when executable
-core behavior is added:
+offscreen platform. Core coverage includes branches and must reach at least 80%.
+CI enforces this threshold. Run the advisory dependency audit separately:
 
 ```powershell
-.\.venv\Scripts\python.exe -m pytest --cov=mediagrab.core --cov-report=term-missing
 .\.venv\Scripts\python.exe -m pip_audit --progress-spinner off --skip-editable
 ```
 
-GitHub Actions runs lint, formatting checks, offline tests, and an advisory
-dependency audit on `windows-latest` with Python 3.14.
+GitHub Actions runs lint, formatting checks, offline tests with core coverage,
+and an advisory dependency audit on `windows-latest` with Python 3.14.
+
+FFmpeg discovery checks the folder next to the running executable, the PyInstaller
+bundle directory when frozen, then absolute folders on PATH. Both `ffmpeg` and
+`ffprobe` must be in the same folder. Version checks run with finite timeouts and
+without a shell; Windows console flags are isolated in `core/process.py`.
+
+Video selection prioritizes resolution, then prefers H.264/AAC at the same
+resolution when compatibility is enabled. MP4 merging and remuxing select the
+container; they do not guarantee H.264/AAC codecs. Codec verification and required
+conversion belong to the Phase 2 download runner. MP3 "best" maps to FFmpeg's
+highest VBR quality setting, rather than a guaranteed 320 kbps stream.
 
 ## Project structure
 
@@ -59,7 +70,7 @@ dependency audit on `windows-latest` with Python 3.14.
 .
 ├── pyproject.toml
 ├── src/mediagrab/
-│   ├── core/                 # No Qt or other GUI imports
+│   ├── core/                 # Models, validation, FFmpeg, options; no GUI imports
 │   └── desktop/resources/    # Interface, workers, and themes
 ├── tests/
 ├── scripts/                  # Windows build scripts, added in Phase 6
@@ -78,7 +89,7 @@ Qt signals. Windows-specific integration will be isolated from the core.
 | Phase | Scope | State |
 | --- | --- | --- |
 | 0 | Package, tooling, tests, Git hygiene, Windows CI | Implemented |
-| 1 | Models, errors, validation, FFmpeg discovery, options | Pending |
+| 1 | Models, errors, validation, FFmpeg discovery, options | Implemented |
 | 2 | Downloader, error mapping, cancellation, CLI, integration test | Pending |
 | 3 | Desktop layout and fake worker | Pending |
 | 4 | Real workers, queue, progress, settings | Pending |
