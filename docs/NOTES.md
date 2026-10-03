@@ -225,3 +225,82 @@ The sandbox denies pytest's default system temp directory. Local test runs use
 `--basetemp .cache/phase2/pytest` within the project; ordinary developer/CI runs
 can use the default directory. All binaries, media, temporary test data, and
 coverage outputs are ignored. The GitHub-hosted workflow has not been run locally.
+
+## Phase 2 follow-up: impersonation dependency and CLI diagnostics — 2026-10-04
+
+The installed yt-dlp **2026.08.19** distribution metadata was checked directly.
+It declares `Provides-Extra: curl-cffi` and this requirement:
+
+```text
+curl-cffi!=0.6.*,!=0.7.*,!=0.8.*,!=0.9.*,<0.17,>=0.5.10;
+    (implementation_name == 'cpython') and extra == 'curl-cffi'
+```
+
+The installed README also recommends `yt-dlp[default,curl-cffi]` for browser
+impersonation. The installed `_curlcffi.py` handler accepts 0.5.10 and 0.10.x
+through 0.16.x, and rejects unsupported versions. Sources:
+
+- [yt-dlp impersonation documentation](https://github.com/yt-dlp/yt-dlp#impersonation).
+- [Pinned handler source](https://github.com/yt-dlp/yt-dlp/blob/2026.08.19/yt_dlp/networking/_curlcffi.py).
+- [Pinned engine source](https://github.com/yt-dlp/yt-dlp/blob/2026.08.19/yt_dlp/YoutubeDL.py).
+- [curl-cffi 0.16.3 release files](https://pypi.org/project/curl-cffi/0.16.3/#files).
+
+Runtime requirements now include `yt-dlp[default,curl-cffi]>=2026.8.19,<2027` and
+the explicit bound `curl-cffi>=0.16.0,<0.17`. The extra identifies the engine
+capability; the direct requirement narrows its broad legacy-compatible range to
+the verified modern 0.16 series. Upstream's `pin-curl-cffi` extra pins 0.16.0, which
+supports this lower bound choice. The upper bound matches the installed handler's
+compatibility ceiling; releases 0.17 and later require a fresh compatibility check.
+
+PyPI metadata for 0.16.0 and 0.16.3 was verified before installation. The project
+environment installed the `cp310-abi3-win_amd64` wheel for curl-cffi **0.16.3** under
+CPython 3.14.0, along with cffi **2.1.1** and pycparser **3.0**. The project `.venv`
+initially lacked curl-cffi; a manual install into another interpreter does not
+apply to an isolated virtual environment. Source installation now installs this
+dependency without a separate manual command.
+
+### Capability check
+
+`core/env_check.py` reports the engine version, sorted unique impersonation target
+names, and nonfatal warnings. It initializes an engine without extractors and
+enumerates loaded handlers without making HTTP requests or reading browser cookies.
+Missing targets produce an actionable reinstall/restart warning; initialization,
+native-handler, or API failures produce a safe warning plus a redacted diagnostic.
+
+The installed engine exposes `_get_available_impersonate_targets()` and marks a
+public API as a future TODO. That private call is isolated in one adapter; it is
+not an invented yt-dlp option. Tests exercise missing/broken handlers and confirm
+the installed engine exposes targets while `urlopen` is prohibited. After adding
+the declared dependency, the local Windows engine exposes **38 targets** with no
+environment warning. The check does not force a target for all downloads.
+
+### Console diagnostics
+
+The CLI emits environment warnings before starting a download. Its console handler
+suppresses explicitly tagged core traceback diagnostics unless `--verbose` is
+passed. Verbose mode also shows redacted engine debug messages and the capability
+summary. Python exception fields are formatted through the core redaction helper;
+raw stack source lines and locals are excluded. Traceback records remain available
+to other application log handlers, including the later desktop logging setup.
+CLI logging configuration is restored after the command returns.
+
+This change stays in Phase 2/core/CLI. No desktop or Phase 3 files are changed.
+TikTok/Instagram success after manual curl-cffi installation was reported by the
+user; this follow-up does not independently test account-dependent platform URLs.
+
+### Follow-up validation
+
+- Declared dependencies installed successfully in the project `.venv`; `pip check`
+  reports no broken requirements.
+- `ruff check .` and `ruff format --check .`: passed.
+- Offline pytest: **475 passed, 1 network test skipped**, **99.14% core coverage
+  including branches**. The new environment module has **100% coverage**.
+- Explicit MP4/MP3 Creative Commons network integration: **1 passed** after adding
+  curl-cffi, with real ffprobe stream checks.
+- Real CLI failure against a deliberately blocked local destination: no traceback
+  by default; redacted traceback with `--verbose`; URL query tokens absent in both.
+  Terminal failures are printed once instead of duplicating the callback and
+  exception messages.
+- `pip-audit --skip-editable`: no known vulnerabilities found in installed
+  dependencies. The editable application is excluded from this dependency audit.
+- Engine's `--list-impersonate-targets`: **38 available targets**.

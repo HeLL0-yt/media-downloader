@@ -23,7 +23,8 @@ classifiers = [
 ]
 dependencies = [
     "PySide6>=6.11.2,<6.12",
-    "yt-dlp[default]>=2026.8.19,<2027",
+    "yt-dlp[default,curl-cffi]>=2026.8.19,<2027",
+    "curl-cffi>=0.16.0,<0.17",
 ]
 
 [project.optional-dependencies]

@@ -277,3 +277,29 @@ The test is skipped by default and fails on missing tools/network when enabled.
 Tests and manual media stay outside Git. Gyan binaries used for local verification
 are checksum-verified and ignored; a distributable fetch/bundle script remains
 Phase 6 work.
+
+## Phase 2 follow-up — 2026-10-04
+
+### Declare impersonation support and inspect actual targets
+
+Use yt-dlp's verified `curl-cffi` extra and explicitly bound curl-cffi to the
+supported 0.16 series. The extra expresses the required engine capability; the
+direct bound prevents installation of older supported-but-unvalidated branches.
+Both requirements participate in pip's resolver, so upstream constraint changes
+must be resolved rather than bypassed.
+
+The core environment report checks the engine's actual loaded targets, not merely
+`import curl_cffi` or a distribution version. yt-dlp currently has no public target
+enumeration API; its verified private method lives in one small adapter. Inspection
+failure is nonfatal and produces a safe warning with diagnostic logging. Full
+FFmpeg/JavaScript environment checks remain Phase 5 work.
+
+### Suppress tracebacks only in the default CLI console
+
+Core exception logging retains redacted full frame information and tags diagnostic
+records. The CLI filters those records by default, while `--verbose` exposes them.
+Filtering belongs to the CLI's handler, leaving diagnostics available to other
+handlers. A copied LogRecord prevents console formatting from removing traceback
+fields used by another handler. Verbose Python exception fields also use the
+redaction helper; raw stack strings containing source lines are never rendered.
+Logging configuration is restored at the end of each CLI invocation.

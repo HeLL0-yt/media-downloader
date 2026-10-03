@@ -49,6 +49,7 @@ The manual verification interface also supports:
 ```powershell
 .\.venv\Scripts\python.exe -m mediagrab.core.cli "<media-url>" --height 1080 --output-dir ".\downloads"
 .\.venv\Scripts\python.exe -m mediagrab.core.cli "<media-url>" --audio --height 1080
+.\.venv\Scripts\python.exe -m mediagrab.core.cli "<media-url>" --verbose
 .\.venv\Scripts\python.exe -m mediagrab.core.cli --help
 ```
 
@@ -62,6 +63,12 @@ them with `--playlists`. Audio artwork is on by default and optional: failed
 fetching or embedding keeps the MP3 and reports a warning. Use `--no-thumbnail`
 to disable it. `--cookies-from-browser chrome`, `firefox`, or `edge` opts into the
 corresponding browser session; read the privacy section before enabling it.
+
+The CLI checks the engine's available browser impersonation targets at startup
+and warns if none are available. The check is offline and nonfatal. Error messages
+hide Python tracebacks by default; `--verbose` adds redacted diagnostics and engine
+details. Authentication data and signed HTTP/HTTPS URLs remain redacted in verbose
+output.
 
 Ctrl+C cancels the CLI. Core downloads also accept a `threading.Event` for worker
 cancellation. Network extraction and upstream FFmpeg processors check cancellation
@@ -118,6 +125,49 @@ MP4. Conversion keeps the resolution (padding odd dimensions by one pixel), but
 is lossy and costs CPU time. `--no-compatibility` keeps source codecs where MP4
 supports them; playback then depends on the player's codec support. MP3 "best" maps to FFmpeg's
 highest VBR quality setting, rather than a guaranteed 320 kbps stream.
+
+## Troubleshooting
+
+### TikTok/Instagram failures or no impersonation target
+
+Browser impersonation lets yt-dlp use browser-compatible TLS/HTTP request
+fingerprints. Some sites require this capability. MediaGrab installs it through
+the `yt-dlp[default,curl-cffi]` extra and explicitly requires
+`curl-cffi>=0.16.0,<0.17`, within the installed engine's supported version range.
+See [yt-dlp's impersonation documentation](https://github.com/yt-dlp/yt-dlp#impersonation).
+
+If the CLI warns that no browser impersonation target is available, refresh the
+project's runtime dependencies using the same Python environment that launches it:
+
+```powershell
+.\.venv\Scripts\python.exe -m pip install --editable .
+.\.venv\Scripts\python.exe -m pip check
+.\.venv\Scripts\python.exe -m yt_dlp --list-impersonate-targets
+```
+
+Installing curl-cffi into a different Python installation does not make it
+available inside `.venv`. Restart a running process after dependency changes.
+Package presence alone is insufficient: the environment check inspects the
+targets loaded by yt-dlp, including its native request handler.
+
+The dependency makes supported impersonation targets available to extractors; it
+does not force impersonation for every request or guarantee access to every URL.
+For login-required media, authenticate in the selected browser and explicitly
+enable its cookies. Private, region-restricted, and DRM-protected media retain
+their existing access restrictions.
+
+### Obtain diagnostic details
+
+Normal CLI failures show a user-facing error without a Python traceback. Repeat
+the command with `--verbose` when diagnosing a problem:
+
+```powershell
+.\.venv\Scripts\python.exe -m mediagrab.core.cli "<media-url>" --verbose
+```
+
+Verbose output retains traceback frames and redacted exception details. Review
+diagnostics before attaching them to an issue; do not include cookies or signed
+URLs. Rotating desktop log files and full startup checks remain Phase 5 work.
 
 ## Project structure
 

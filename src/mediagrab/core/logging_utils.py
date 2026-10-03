@@ -30,9 +30,23 @@ def log_exception(logger: logging.Logger, message: str, error: BaseException) ->
         message: Application-owned description of the failed operation.
         error: Exception with its original traceback and cause.
     """
+    details = format_exception(error)
+    # Console handlers can hide diagnostic tracebacks without discarding them
+    # from application log handlers or changing library-wide logging levels.
+    logger.error("%s\n%s", redact_message(message), details, extra={"mediagrab_traceback": True})
+
+
+def format_exception(error: BaseException) -> str:
+    """Format exception frames and redacted messages without source code or locals.
+
+    Args:
+        error: Original exception, including its traceback and chained causes.
+
+    Returns:
+        Diagnostic text suitable for an explicitly enabled console or log file.
+    """
     trace = traceback.TracebackException.from_exception(error, capture_locals=False)
-    details = _format_trace(trace)
-    logger.error("%s\n%s", redact_message(message), details)
+    return _format_trace(trace)
 
 
 def _format_trace(trace: traceback.TracebackException) -> str:
