@@ -1,6 +1,10 @@
 """Shared test configuration; network access requires explicit opt-in."""
 
+import os
+
 import pytest
+
+os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 
 def pytest_addoption(parser: pytest.Parser) -> None:
