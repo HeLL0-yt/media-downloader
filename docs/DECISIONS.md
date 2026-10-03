@@ -1,5 +1,51 @@
 # Design decisions
 
+## Phase 3 — 2026-10-04
+
+The current request authorizes Phase 3 in the existing local checkout. This entry
+supersedes the historical handoff's pending-phase wording. Phase 4 is not started.
+
+### Offline desktop and reusable worker contract
+
+The desktop shows simulated metadata and transfer/completion states explicitly.
+Fake analysis validates the URL and reads a packaged SVG fixture; it performs no
+HTTP requests. Fake downloads emit core ProgressEvent snapshots and create no
+media or destination folders. No real core get_info/download function is wired.
+Error injection is available through the immutable Simulation configuration for
+tests, without assigning special behavior to user URLs.
+
+Each worker owns a QThread and threading.Event; only immutable result/progress
+payloads cross to GUI-owned Slots through Signals. QueueManager accepts a worker
+factory, bounds concurrency to 1–4 (default 2), and owns workers until native
+thread teardown completes. The current user request brings fake queue scheduling,
+cancel/retry tests and actions into Phase 3; real engine adapters remain Phase 4.
+Add to queue stages work until Start queue or Download starts the scheduler;
+subsequent additions run while scheduling is active. Download adds the current
+selection and starts the queue. Retry reuses the immutable request with a fresh
+worker, and active rows cannot be removed or retried before thread exit.
+
+### Asynchronous close and engine reporting
+
+Close disables controls, stops scheduling and sets cancellation tokens. The window
+keeps its event loop and worker ownership until all threads have exited. Finished
+threads are checked with wait(0) and deleted on the GUI thread; no blocking GUI
+wait or forced thread termination is used. The version-only probe uses core's
+yt-dlp version constant and FFmpeg discovery/version functions off the GUI thread.
+Core's two version subprocesses each have a five-second bound; closing can wait
+for these existing probes. This is not the full Phase 5 startup environment UX.
+
+### Presentation and settings scope
+
+Qt 6 native high-DPI scaling uses PassThrough rounding. Packaged QSS supplies the
+dark Fusion theme; visible text uses tr(), and external metadata labels use plain
+text to avoid rich-text interpretation. A progress delegate distinguishes unknown
+transfer progress and processing from terminal success. Context menus use popup()
+and delete on hide. The thumbnail fixture is read in a worker and decoded in the
+GUI. URL edits invalidate the selected metadata and stale results are discarded.
+DesktopSettings holds in-memory destination/concurrency defaults only. QSettings,
+settings dialogs, real thumbnails/downloads and all other Phase 4+ work remain
+outside this gate. No dependencies or core source files were changed.
+
 ## Session handoff — 2026-10-04
 
 ### Scope and stop-gates
