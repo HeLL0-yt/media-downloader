@@ -45,7 +45,7 @@ jobs:
       - name: Check formatting
         run: python -m ruff format --check .
       - name: Run offline tests
-        run: python -m pytest
+        run: python -m pytest --cov=mediagrab.core --cov-report=term-missing --cov-report=xml
       - name: Audit dependencies (advisory)
         if: always()
         continue-on-error: true
