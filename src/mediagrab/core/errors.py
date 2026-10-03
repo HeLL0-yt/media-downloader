@@ -113,6 +113,14 @@ class UnsupportedUrlError(ExtractionError):
     default_message: ClassVar[str] = "This URL is not supported by the download engine."
 
 
+class FormatUnavailableError(ExtractionError):
+    """The selected quality has no matching format."""
+
+    default_message: ClassVar[str] = (
+        "The selected quality is unavailable. Choose Best or another quality and retry."
+    )
+
+
 class DrmProtectedError(ExtractionError):
     """The media is protected by DRM and cannot be downloaded by MediaGrab."""
 
