@@ -1,5 +1,166 @@
 # Verified upstream notes
 
+## Resume here — 2026-10-04
+
+Read `AGENTS.md`, `docs/DECISIONS.md`, this section, and `README.md` before changing
+code. Phases **0–2 are complete**; **Phase 3 is pending and requires `continue`**.
+The curl-cffi/core environment/CLI follow-up is complete. This handoff adds no GUI
+code. Historical phase evidence below records what was verified at each gate,
+rather than a list of outstanding implementation work.
+
+At the start of this documentation task, the checkout was clean on `main`, tracking
+`origin/main` without an ahead/behind count. Baseline commit:
+`3094d25 fix: declare impersonation support and quiet CLI errors`. The handoff
+documentation commit follows that baseline. Recheck `git status` and `git log`
+in a new session; do not infer current remote state from this dated observation.
+
+### Implemented files and responsibilities
+
+| Location | Implemented behavior |
+| --- | --- |
+| `pyproject.toml`, `.github/workflows/ci.yml` | Python/dependency bounds, editable src packaging, strict Ruff, Windows offline tests/coverage, advisory pip-audit. |
+| `core/models.py`, `errors.py`, `validators.py` | Immutable request/metadata/progress contracts, typed errors, strict HTTP/HTTPS validation/domain policy, writable destination checks. |
+| `core/ffmpeg.py`, `process.py`, `options.py` | Complete-pair discovery/version checks, shell-free cancellable subprocesses, pure engine options. |
+| `core/downloader.py`, `postprocessors.py` | Lazy metadata analysis, downloads/cancellation, MP4 codec compatibility, optional MP3 artwork, authoritative final-path capture. |
+| `core/errors_map.py`, `logging_utils.py` | Conservative friendly error mapping and redacted diagnostics. |
+| `core/env_check.py`, `cli.py` | Offline actual impersonation target report, manual download CLI, default traceback suppression with `--verbose` opt-in. |
+| `tests/` | Unit/mock/real-engine offline tests, architectural import guard, opt-in Creative Commons MP4/MP3 network integration. |
+| `desktop/__init__.py` | Package skeleton only; no runnable desktop application yet. |
+
+No `app.py`, main window, widgets, workers, queue manager, settings implementation,
+QSS theme, engine updater, release workflow, build script, or PyInstaller spec is
+implemented. Resources/scripts directories are skeletons. Full startup environment
+checks, GUI smoke tests, first-run dialog, and rotating file logging remain later
+phase work. See DECISIONS for the complete remaining phase gates.
+
+### Environment and dependency baseline
+
+Local validation uses Windows CPython **3.14.0** in repository-local `.venv`,
+yt-dlp **2026.08.19**, and PySide6/Qt **6.11.2**. Runtime declarations are:
+
+```text
+PySide6>=6.11.2,<6.12
+yt-dlp[default,curl-cffi]>=2026.8.19,<2027
+curl-cffi>=0.16.0,<0.17
+```
+
+The project environment has curl-cffi **0.16.3** and exposed **38** impersonation
+targets during the follow-up verification. Installing into another Python does
+not install into this `.venv`. Missing targets are a nonfatal core/CLI warning;
+the app does not force impersonation globally. The target enumeration API is
+private upstream and isolated in `env_check.py`; reverify it after engine upgrades.
+
+The `default` extra supplies yt-dlp-ejs **0.8.0**, not an external JS runtime.
+The verified engine docs recommend Deno and enable it by default; other listed
+runtimes require configuration. Full YouTube support is not established merely
+by installing Python dependencies. Runtime detection/configuration is Phase 5.
+
+### Commands for a new session
+
+Run from the repository root in PowerShell. Create `.venv` with Python 3.14 if it
+is absent; installation is unnecessary when the existing environment is intact.
+
+```powershell
+py -3.14 -m venv .venv
+.\.venv\Scripts\python.exe -m pip install --editable ".[dev]"
+.\.venv\Scripts\python.exe -m pip check
+.\.venv\Scripts\python.exe -m ruff check .
+.\.venv\Scripts\python.exe -m ruff format --check .
+$env:QT_QPA_PLATFORM = "offscreen"
+New-Item -ItemType Directory -Force .cache/handoff | Out-Null
+.\.venv\Scripts\python.exe -m pytest --basetemp .cache/handoff/pytest --cov=mediagrab.core --cov-report=term-missing --cov-report=xml
+.\.venv\Scripts\python.exe -m yt_dlp --list-impersonate-targets
+git diff --check
+Get-Location
+git log --oneline -3
+git status
+```
+
+Tests use an explicit project-local base temp because this session's sandbox
+denies the default system pytest temp directory. `.cache` and coverage outputs
+are ignored. Network tests are skipped unless `--run-network` is passed, including
+when selected with `-m network`. With real FFmpeg/ffprobe on PATH, enable them with:
+
+```powershell
+.\.venv\Scripts\python.exe -m pytest tests/test_network_download.py --run-network --basetemp .cache/handoff/network
+```
+
+The local Codex command wrapper did not preserve a PowerShell PATH addition when
+launching Python. For local validation using ignored `vendor/ffmpeg`, set PATH
+inside Python before calling pytest:
+
+```powershell
+@'
+import os
+from pathlib import Path
+import pytest
+
+os.environ["PATH"] = str(Path("vendor/ffmpeg").resolve()) + os.pathsep + os.environ["PATH"]
+raise SystemExit(pytest.main([
+    "tests/test_network_download.py", "--run-network",
+    "--basetemp", ".cache/handoff/network", "-q",
+]))
+'@ | .\.venv\Scripts\python.exe -X utf8 -
+```
+
+This is a validation environment workaround, not a runtime discovery change.
+Create the `.cache/handoff` parent first: pytest creates the base temp itself,
+but does not create missing ancestors. The initial handoff rerun failed fixture
+setup because that parent was absent; the command above includes its creation.
+If pip's system temp directory is also blocked, assign TEMP/TMP to a newly created
+directory under `.cache` before installation. Never install project dependencies
+into an unrelated interpreter to work around an environment mismatch.
+
+Manual CLI entry point:
+
+```powershell
+.\.venv\Scripts\python.exe -m mediagrab.core.cli --help
+.\.venv\Scripts\python.exe -m mediagrab.core.cli "https://download.blender.org/peach/trailer/trailer_iphone.m4v" --audio --output-dir .cache/manual
+```
+
+Options include `--height`, `--bitrate`, `--playlists`, `--cookies-from-browser`,
+`--no-compatibility`, `--no-thumbnail`, and `--verbose`. Height is ignored for audio.
+Use Best for direct media with unknown height metadata. Exit codes are 0 success,
+1 failure, 130 cancellation, and argparse's 2 for invalid arguments. Tracebacks
+are hidden by default; verbose diagnostics remain redacted.
+
+### Verified results and limits
+
+Latest executable-code gate: **475 passed, 1 network test skipped; 99.14% core
+coverage including branches**, above the enforced 80% minimum. `env_check.py`
+has 100% coverage. Ruff lint/format, `pip check`, and diff whitespace checks passed.
+The documentation handoff rerun reproduced **475 passed, 1 skipped, 99.14%** after
+creating the base-temp parent; Ruff and `pip check` also passed again. No source
+code changed and the network test was not rerun for this documentation-only task.
+The explicitly enabled network integration separately passed after curl-cffi was
+added; ffprobe confirmed MP4 H.264/AAC and MP3 audio. The dependency audit reported
+no known vulnerabilities and excluded the editable application itself.
+
+Real split-stream merging/conversion and optional cover embedding were also
+verified with synthetic local media. These checks do not establish every platform
+or account-dependent download works. TikTok/Instagram success after manually
+installing curl-cffi is user-reported, not an independently repeated platform test.
+No GitHub-hosted CI run, GUI launch, or frozen application test was verified here.
+
+Ignored `vendor/ffmpeg/` currently contains `ffmpeg.exe`, `ffprobe.exe`, and the
+validation archive. Both executables report Gyan **9.0.2 essentials**; the verified
+archive checksum and provenance are recorded below. They are local test tools,
+not committed assets or a finished distribution. Temporary `.cache/phase2` fetch
+and synthetic-pipeline helpers are not maintained product scripts. A new session
+must not depend on ignored files being available on another machine.
+
+### Resume checklist
+
+1. Inspect local status and preserve any user changes; use the current files as
+   authority and the historical notes as evidence.
+2. Confirm the requested phase. The next authorized phase after `continue` is
+   **Phase 3: desktop layout and fake workers**, with no real download integration.
+3. Reuse the existing core contracts. Keep network work off the GUI thread, bridge
+   callbacks through Signals, and design cooperative worker shutdown before wiring
+   real downloads in Phase 4.
+4. Run the checks above, record new evidence, commit the phase, and stop. Do not
+   present future UI, updater, packaging, or roadmap work as completed.
+
 ## Phase 0 — 2026-10-04
 
 Dependency metadata was checked against PyPI and the local Python 3.14 environment.

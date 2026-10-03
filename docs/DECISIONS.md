@@ -1,5 +1,102 @@
 # Design decisions
 
+## Session handoff — 2026-10-04
+
+### Scope and stop-gates
+
+Phases **0, 1, and 2 are complete**, including the requested curl-cffi dependency,
+offline impersonation capability check, and quiet CLI follow-up. **Phase 3 has not
+started.** The current task updates documentation only. A new session must wait
+for the user's `continue` before starting the desktop phase.
+
+Work only in `C:\Projects\media-downloader`, using the existing local checkout.
+Do not create a worktree or cloud task. Before each phase, state a short plan;
+after implementation, run Ruff and pytest, make small conventional commits,
+report results, and stop for `continue`. Show the working directory, the last
+three commits, and Git status at the end. Do not push without authorization.
+Read the repository's `AGENTS.md` before work. Resolve routine implementation
+tradeoffs in this document; ask only for blocking information.
+
+The phase entries below are historical decisions. Later entries supersede earlier
+statements assigning work to a future phase. In particular, codec conversion,
+optional artwork handling, and final-path checks assigned to Phase 2 in the
+Phase 1 entries are now implemented.
+
+### Fixed stack and implementation constraints
+
+- Target Windows 10/11 and Python `>=3.14,<3.15`; macOS remains roadmap work.
+- Use PySide6, yt-dlp through `import yt_dlp`, native FFmpeg/ffprobe, pytest,
+  pytest-qt, Ruff, PyInstaller, PEP 621 metadata, and GitHub Actions.
+- Keep `core/` independent of Qt and all GUI modules. Use typed frozen dataclasses,
+  `pathlib`, logging, and Google-style docstrings for public functions.
+- Never pass input to a shell: argument-list subprocesses only, `shell=False`,
+  no `os.system`. Windows process flags belong only in `core/process.py`.
+- Verify engine options and API behavior against installed yt-dlp source before
+  adding them. Keep dependency bounds; distributed artifacts must record resolved
+  versions, since ranges are not a reproducible dependency lock.
+- Do not log cookies, authorization data, or full signed URLs. Preserve redacted
+  traceback diagnostics for later file logging. Do not implement DRM circumvention.
+- Do not commit executable binaries, downloaded media, virtual environments,
+  caches, or coverage output. Preserve the MIT license and attribution.
+
+### Contracts the desktop must preserve
+
+`get_info(url, *, cookies_browser=None, cancel_event=None)` returns `VideoInfo`.
+Analysis does not enumerate lazy playlist entries. Heights are sorted and unique;
+missing duration/count/quality data stays unknown rather than fabricated.
+
+`download(request, on_progress, cancel_event)` returns the actual final `Path`.
+Its callback receives `ProgressEvent` on the calling worker thread and must be
+fast and must not raise. The GUI adapter must communicate through Qt Signals,
+without calling widgets from a worker. Cancellation uses `threading.Event`.
+`DownloadStatus.PROCESSING` has the value `merging/converting`; transfer completion
+is not overall success. Only a valid after-move path and successful engine return
+permit `FINISHED`.
+
+For playlists, the return value is the last completed final path after all entries
+succeed. Progress repeats for streams and entries; it is not an aggregate playlist
+percentage. Completed files and resumable partial files are retained after failure
+or cancellation. Open-folder can use the request's destination for a playlist.
+
+Compatibility defaults on: preserve resolution, prefer H.264/AAC, and convert
+incompatible streams when needed. Encoding costs CPU time and is lossy; HDR tone
+mapping is not implemented. MP3 uses best VBR quality 0 or 320/192/128 kbps.
+Artwork defaults on and its failure preserves the successful MP3. Playlist mode
+defaults off and limits playlist-only inputs to the first entry.
+
+Cancellation is cooperative. Owned conversion/probe subprocesses are interrupted
+and reaped; upstream extraction and standard processors stop at the next hook or
+operation boundary. Desktop shutdown must cancel workers and wait with a timeout
+without forcibly terminating a Qt thread or destroying a running worker.
+
+Output checks create/probe a writable destination and enforce resolved boundaries
+before writes and when collecting final paths. They do not protect against hostile
+local processes racing changes to filesystem links. The domain allowlist applies
+to the input URL, not redirects or CDN requests.
+
+`check_environment()` currently reports only yt-dlp version, actual loaded
+impersonation targets, and nonfatal warnings. It performs no HTTP requests, reads
+no browser cookies, and imports no GUI. Its one private yt-dlp adapter is an
+explicit compatibility maintenance point. FFmpeg/JavaScript startup reporting,
+updates, rotating file logging, and first-run consent remain unimplemented.
+
+### Remaining phase deliverables
+
+| Phase | Required work and acceptance gate |
+| --- | --- |
+| 3 | Desktop layout with **fake workers only**: URL/paste/Analyze, metadata card and async thumbnail, Video/MP3 controls, quality/bitrate choices, folder picker, Add to queue/Download, queue table with progress/speed/ETA/actions and context menu, URL drag/drop and Ctrl+V, dark QSS/high-DPI support, `tr()` strings. Establish Signals-only worker communication and safe shutdown. Add offscreen main-window/fake-worker smoke tests. Do not connect real downloads in this phase. |
+| 4 | Connect real analysis/download workers; queue limit defaults to 2 and is configurable 1–4; progress, cancel/retry/open-folder/remove actions. Add QSettings and settings dialog for folder, mode/quality, parallelism, compatibility, artwork, browser cookies, and dark/light theme. Queue persistence is not required. Test queue scheduling, cancellation, retry, and window creation. |
+| 5 | Complete startup environment checks for engine/FFmpeg/JS runtime using then-current verified docs; show friendly warnings asynchronously. Add urllib update checks with timeouts/offline handling and development `python -m pip install -U yt-dlp`; document a safe frozen-mode update strategy before implementing it. Add first-run disclaimer, rotating `%LOCALAPPDATA%/MediaGrab/logs` logging, and polished typed-error UX. |
+| 6 | PyInstaller onedir/noconsole spec, Windows build script, verified FFmpeg/ffprobe fetch/bundle script, dependency/license notices, and frozen app verification from a clean path. Add tag-triggered artifact/Release workflow; optional Inno Setup. FFmpeg's website links third-party Windows builds: do not describe those as binaries built by FFmpeg itself. |
+| 7 | Final README badges, screenshot placeholders, Mermaid architecture, usage/build/troubleshooting, CONTRIBUTING, updated decisions, and roadmap for macOS/Telegram bot/web. Do not claim roadmap features are implemented. |
+
+The first-run dialog and README must retain: "For personal use only. Respect
+copyright and the Terms of Service of each platform. The authors don't encourage
+downloading content you have no rights to." Browser cookie access remains opt-in;
+document that it uses the user's authenticated session and can expose private
+account content. All network/download work, including update checks and analysis,
+must stay off the GUI thread.
+
 ## Phase 0 — 2026-10-04
 
 ### Use the existing repository root
