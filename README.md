@@ -1,12 +1,12 @@
 # MediaGrab
 
 MediaGrab is a Python 3.14 desktop application being built for Windows 10/11.
-Its planned download engine uses yt-dlp as a library, FFmpeg for media processing,
+Its download engine uses yt-dlp as a library, FFmpeg for media processing,
 and PySide6 for the interface.
 
-**Current state: Phase 1 core foundations. Models, validation, FFmpeg discovery,
-and engine options are implemented. Downloads and the desktop application are
-scheduled for later phases.**
+**Current state: Phase 2 download engine and manual CLI. Metadata extraction,
+MP4/MP3 downloads, cancellation, safe error mapping, and codec conversion are
+implemented. The desktop interface starts in Phase 3.**
 
 ## Planned features
 
@@ -29,8 +29,51 @@ python -m venv .venv
 
 The project uses a `src/` layout. Install it before running tests; changing
 `PYTHONPATH` is unnecessary. FFmpeg and a JavaScript runtime are external binaries,
-not Python packages. Installation and packaging instructions will be added with
-their implementation phases.
+not Python packages. Get both FFmpeg executables from a Windows build linked on
+the [FFmpeg download page](https://ffmpeg.org/download.html), then add their shared
+folder to PATH. Automated bundling belongs to Phase 6. YouTube's external
+JavaScript runtime requirements and the startup check belong to Phase 5.
+
+## Manual downloads
+
+Use only media you have permission to download. These examples use Blender's
+Creative Commons trailer and save into the local `downloads/` folder:
+
+```powershell
+.\.venv\Scripts\python.exe -m mediagrab.core.cli "https://download.blender.org/peach/trailer/trailer_iphone.m4v"
+.\.venv\Scripts\python.exe -m mediagrab.core.cli "https://download.blender.org/peach/trailer/trailer_iphone.m4v" --audio --bitrate 192
+```
+
+The manual verification interface also supports:
+
+```powershell
+.\.venv\Scripts\python.exe -m mediagrab.core.cli "<media-url>" --height 1080 --output-dir ".\downloads"
+.\.venv\Scripts\python.exe -m mediagrab.core.cli "<media-url>" --audio --height 1080
+.\.venv\Scripts\python.exe -m mediagrab.core.cli --help
+```
+
+Replace `<media-url>` with an HTTP/HTTPS URL. Height choices are best, 2160, 1440,
+1080, 720, 480, and 360; bitrate choices are best, 320, 192, and 128. `--height`
+applies to video; it is accepted and ignored for audio. A direct media URL can
+lack height metadata: select best when a height filter reports unavailable quality.
+
+Playlists are off by default, including playlist-only URLs (entry 1 only). Enable
+them with `--playlists`. Audio artwork is on by default and optional: failed
+fetching or embedding keeps the MP3 and reports a warning. Use `--no-thumbnail`
+to disable it. `--cookies-from-browser chrome`, `firefox`, or `edge` opts into the
+corresponding browser session; read the privacy section before enabling it.
+
+Ctrl+C cancels the CLI. Core downloads also accept a `threading.Event` for worker
+cancellation. Network extraction and upstream FFmpeg processors check cancellation
+at operation boundaries; they cannot guarantee immediate interruption of every
+blocking operation. MediaGrab's own probing/conversion processes are cancellable
+and reaped before returning. Completed playlist files and resumable partial
+downloads are retained after cancellation.
+
+Trailer attribution: © copyright 2008, Blender Foundation / www.bigbuckbunny.org.
+Blender publishes the project under [CC BY 3.0](https://peach.blender.org/about/).
+The audio example extracts the trailer soundtrack; it does not use the separately
+distributed score. Downloaded media is never committed to the repository.
 
 ## Quality checks
 
@@ -42,7 +85,15 @@ $env:QT_QPA_PLATFORM = "offscreen"
 ```
 
 Tests marked `network` are skipped unless `--run-network` is passed. The network
-integration test will be added in Phase 2. GUI tests will use pytest-qt and Qt's
+integration test downloads the small Blender trailer as MP4 and MP3 and checks
+its streams using ffprobe. Run it with both binaries available on PATH:
+
+```powershell
+.\.venv\Scripts\python.exe -m pytest tests/test_network_download.py --run-network
+```
+
+Explicitly enabled integration tests fail if FFmpeg or the network is unavailable;
+they do not silently skip missing dependencies. GUI tests will use pytest-qt and Qt's
 offscreen platform. Core coverage includes branches and must reach at least 80%.
 CI enforces this threshold. Run the advisory dependency audit separately:
 
@@ -59,9 +110,13 @@ bundle directory when frozen, then absolute folders on PATH. Both `ffmpeg` and
 without a shell; Windows console flags are isolated in `core/process.py`.
 
 Video selection prioritizes resolution, then prefers H.264/AAC at the same
-resolution when compatibility is enabled. MP4 merging and remuxing select the
-container; they do not guarantee H.264/AAC codecs. Codec verification and required
-conversion belong to the Phase 2 download runner. MP3 "best" maps to FFmpeg's
+resolution when compatibility is enabled. The runner probes the downloaded media,
+copies compatible streams, and converts incompatible video/audio to H.264/AAC
+before writing metadata and reporting the final MP4. Split streams use a temporary
+MKV when compatibility is enabled, allowing codecs that cannot first merge into
+MP4. Conversion keeps the resolution (padding odd dimensions by one pixel), but
+is lossy and costs CPU time. `--no-compatibility` keeps source codecs where MP4
+supports them; playback then depends on the player's codec support. MP3 "best" maps to FFmpeg's
 highest VBR quality setting, rather than a guaranteed 320 kbps stream.
 
 ## Project structure
@@ -70,7 +125,7 @@ highest VBR quality setting, rather than a guaranteed 320 kbps stream.
 .
 ├── pyproject.toml
 ├── src/mediagrab/
-│   ├── core/                 # Models, validation, FFmpeg, options; no GUI imports
+│   ├── core/                 # Downloader, CLI, validation, conversion; no GUI imports
 │   └── desktop/resources/    # Interface, workers, and themes
 ├── tests/
 ├── scripts/                  # Windows build scripts, added in Phase 6
@@ -80,8 +135,9 @@ highest VBR quality setting, rather than a guaranteed 320 kbps stream.
 └── .github/workflows/ci.yml
 ```
 
-Core progress will use a dataclass callback and cancellation will use
-`threading.Event`. The desktop layer will communicate with worker threads through
+Core progress uses a dataclass callback and cancellation uses `threading.Event`.
+The callback runs on the calling worker thread and must be fast and not raise.
+The desktop layer will communicate with worker threads through
 Qt signals. Windows-specific integration will be isolated from the core.
 
 ## Implementation phases
@@ -90,7 +146,7 @@ Qt signals. Windows-specific integration will be isolated from the core.
 | --- | --- | --- |
 | 0 | Package, tooling, tests, Git hygiene, Windows CI | Implemented |
 | 1 | Models, errors, validation, FFmpeg discovery, options | Implemented |
-| 2 | Downloader, error mapping, cancellation, CLI, integration test | Pending |
+| 2 | Downloader, error mapping, cancellation, CLI, integration test | Implemented |
 | 3 | Desktop layout and fake worker | Pending |
 | 4 | Real workers, queue, progress, settings | Pending |
 | 5 | Environment checks, updater, disclaimer, logging, error UX | Pending |
@@ -102,15 +158,17 @@ explicit `continue`.
 
 ## Privacy and security
 
-The planned cookies-from-browser setting will be opt-in and disabled by default.
+The cookies-from-browser option is opt-in and disabled by default.
 It allows yt-dlp to read browser session cookies and use the corresponding account
 to access a platform. Cookies can grant account access: do not share them, export
-them into this repository, or include them in bug reports. MediaGrab will not log
-cookie values or full signed URLs.
+them into this repository, or include them in bug reports. Engine diagnostics
+redact HTTP/HTTPS URLs and suppress authentication diagnostics; traceback logging
+retains frames without source code or local variables. Error messages use safe
+application-owned text. Review log files before sharing them.
 
-The implementation will validate HTTP/HTTPS URLs, sanitize output filenames,
-check output directory permissions, and avoid shell execution. MediaGrab will
-not implement DRM circumvention.
+The implementation validates HTTP/HTTPS URLs, sanitizes output filenames,
+checks output directory permissions and final path boundaries, and avoids shell
+execution. MediaGrab does not implement DRM circumvention.
 
 ## Responsible use
 

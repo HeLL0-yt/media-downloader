@@ -129,3 +129,99 @@ Windows CPython 3.14.0, yt-dlp 2026.08.19, PySide6/Qt 6.11.2:
 
 The 80% coverage threshold is now enforced by Windows CI. The GitHub-hosted job
 itself has not been run as part of this local phase.
+
+## Phase 2 — 2026-10-04
+
+### Verified engine behavior
+
+The installed yt-dlp **2026.08.19** source was read before using the extraction,
+hook, processor, and networking APIs:
+
+- [`YoutubeDL.py`](https://github.com/yt-dlp/yt-dlp/blob/2026.08.19/yt_dlp/YoutubeDL.py):
+  `extract_info(download=False, process=False)`, URL result processing,
+  `add_post_processor`, stage ordering, automatic merger ordering, download exit
+  codes, final `filepath` updates, thumbnail writes, and `logger` options.
+- [`common.py`](https://github.com/yt-dlp/yt-dlp/blob/2026.08.19/yt_dlp/postprocessor/common.py):
+  custom `PostProcessor.run` contract and progress hooks. Hook info copies are
+  made before the processor runs, so a finished hook can carry a stale filepath.
+  The after-move collector reads the actual updated info instead.
+- [`ffmpeg.py`](https://github.com/yt-dlp/yt-dlp/blob/2026.08.19/yt_dlp/postprocessor/ffmpeg.py):
+  merger container selection, audio conversion, metadata, and FFmpeg argument
+  handling. Automatic merging precedes registered conversion processors.
+- [`embedthumbnail.py`](https://github.com/yt-dlp/yt-dlp/blob/2026.08.19/yt_dlp/postprocessor/embedthumbnail.py):
+  optional artwork conversion, file replacement, and temporary file names.
+- [`networking`](https://github.com/yt-dlp/yt-dlp/tree/2026.08.19/yt_dlp/networking):
+  public `Request` and `YoutubeDL.urlopen` for optional artwork using the existing
+  engine session, rather than a separate unauthenticated HTTP client.
+- [`FFmpeg documentation`](https://ffmpeg.org/ffmpeg.html): stream mapping,
+  codec copy versus encoding, and output-container handling.
+
+`lazy_playlist` does not mean Analyze can return without walking entries. The
+installed `__process_playlist` still enumerates them. Unprocessed extraction plus
+bounded URL-result resolution avoids that walk. An offline test registers a real
+InfoExtractor with a generator that fails if consumed, proving the boundary.
+
+### Integration media and attribution
+
+The integration test uses the **3,889,885-byte** Big Buck Bunny trailer hosted at
+[Blender's download server](https://download.blender.org/peach/trailer/trailer_iphone.m4v).
+[Blender's license page](https://peach.blender.org/about/) identifies published
+Peach project content as Creative Commons Attribution 3.0 and specifies attribution.
+For the trailer and its extracted soundtrack:
+
+**© copyright 2008, Blender Foundation / www.bigbuckbunny.org.**
+
+The test extracts the soundtrack from this trailer, not the separately released
+score. It downloads into pytest's temporary directory and commits no media.
+This test exercises a generic direct-media extractor; it does not establish that
+every platform works or that YouTube's runtime/authentication needs are satisfied.
+
+W3C's Sintel copy was also considered. Its GET request succeeded with urllib,
+but the installed engine encountered an anti-bot 403. The integration fixture
+therefore uses Blender's trailer, which passed with the engine's default requests.
+No anti-bot bypass or forced impersonation was added.
+
+### Local executable verification
+
+[FFmpeg's download page](https://ffmpeg.org/download.html) links third-party
+Windows builds, including [Gyan](https://www.gyan.dev/ffmpeg/builds/). The validation
+tools were downloaded into the ignored project-local `vendor/ffmpeg/` directory.
+They are not committed or packaged in this phase.
+
+The publisher's [essentials checksum endpoint](https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip.sha256)
+resolved to the versioned `ffmpeg-9.0.2-essentials_build.zip.sha256`. The matching
+versioned archive was used, rather than independently fetching a moving latest
+archive. Its SHA-256 was verified before selectively copying only the two named
+executables:
+
+```text
+60f467265b1e312373dbcd92200c2618a74850f98d3d078e94296bb3fa2047ba
+```
+
+Both binaries report `9.0.2-essentials_build-www.gyan.dev`. The checksum checks
+archive integrity against the publisher's HTTPS checksum; it is not an independent
+publisher-signature verification. Packaging and dependency-license notices remain
+Phase 6 work.
+
+### Local Phase 2 validation
+
+Windows CPython 3.14.0, yt-dlp 2026.08.19, PySide6/Qt 6.11.2:
+
+- `ruff check .` and `ruff format --check .`: passed.
+- Offline pytest with branch-inclusive core coverage: **460 passed, 1 network
+  test skipped**, **99.08% core coverage**.
+- Explicitly enabled network integration: **1 passed**. Real MP4 had H.264/AAC;
+  real MP3 had an MP3 audio stream, verified with ffprobe.
+- Manual CLI downloaded and returned Blender's final MP4 path.
+- Real synthetic VP9/Opus conversion produced H.264/yuv420p/AAC MP4.
+- Real separate VP8 and Opus streams went through yt-dlp's automatic merger,
+  the compatibility intermediate, codec conversion, metadata, and final path
+  collector; ffprobe confirmed H.264/AAC.
+- Real optional JPEG embedding produced an MP3 with an attached cover image.
+- Native subprocess tests verify both pipes are drained and children are reaped
+  on cancellation/timeouts, including a forced-kill fallback.
+
+The sandbox denies pytest's default system temp directory. Local test runs use
+`--basetemp .cache/phase2/pytest` within the project; ordinary developer/CI runs
+can use the default directory. All binaries, media, temporary test data, and
+coverage outputs are ignored. The GitHub-hosted workflow has not been run locally.

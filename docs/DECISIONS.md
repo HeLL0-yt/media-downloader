@@ -152,3 +152,128 @@ Windows CI runs the offline suite with branch coverage and the configured 80%
 minimum. Real yt-dlp construction, format sorting, and filename preparation are
 tested without downloading media, in addition to unit tests for validation,
 settings, executable discovery, process safety, and option combinations.
+
+## Phase 2 — 2026-10-04
+
+### Analyze metadata without enumerating playlists
+
+`get_info` retains the requested quiet/no-warnings/skip-download/single-video
+options and calls `extract_info(download=False, process=False)`. Source inspection
+showed that `lazy_playlist=True` still iterates every selected entry before
+returning. Unprocessed extraction preserves a lazy entries object instead.
+
+URL and transparent URL results are followed through the public extraction API,
+with a ten-redirect limit. Transparent wrappers retain their non-null display
+metadata. Playlist entries are never consumed to calculate a count: an extractor's
+count or an already materialized list is used; otherwise the count is unknown.
+Available heights are taken from video formats, deduplicated, and sorted. Analyze
+can opt into the same browser session as downloads, with no cookie persistence.
+
+### Capture final paths through public postprocessor registration
+
+`YoutubeDL.download([url])` returns an exit code, not an info dictionary. The runner
+registers a filename guard at the public `video` stage and a collector at
+`after_move`. The collector reads the authoritative `filepath` after conversion,
+metadata, optional artwork, and final moves. It accepts only nonempty existing
+files with the requested extension inside the resolved destination. Transfer
+`finished` hooks announce processing; only the collector plus a successful engine
+exit permits the application's final `finished` event.
+
+The public API returns one `Path`. For a playlist, it returns the last completed
+entry's final path after all requested entries succeed. Progress can cycle through
+transfer/processing stages for multiple streams and entries. Cancellation or a
+later playlist failure retains already completed files but does not emit overall
+success. The queue can open the request's output folder for playlist results.
+
+Resolved boundary checks reject traversal and existing links that resolve outside
+the destination. They are not a defense against another local process changing
+links between a check and a file write. The intended destination is a user-owned
+folder, not a directory writable by an untrusted competing process.
+
+### Convert codecs before metadata, with a safe intermediate for split streams
+
+The pure builder retains the requested MP4 merge/output options. In compatibility
+mode, the `video` processor changes split-stream intermediate media to MKV before
+yt-dlp chooses filenames and invokes its automatic merger. This is necessary
+because automatic merger processors run before registered postprocessors: codecs
+such as VP8 cannot first merge into MP4 before being converted. This temporary MKV
+is converted to the requested final MP4 and removed by the engine after success.
+Single combined streams go directly to the conversion processor.
+
+The runner substitutes `VideoOutputPP` for the builder's remuxer using public
+`add_post_processor`, leaving metadata processing after it. ffprobe verifies actual
+streams. Compatible H.264 8-bit 4:2:0 video and AAC audio are copied; other streams
+are encoded with libx264, CRF 20, medium preset, yuv420p, and AAC at 256 kbps as
+needed. Conversion preserves resolution and pads odd dimensions to an even size.
+Output is written to a private temporary file and atomically replaces the final
+destination only after success. Failed/cancelled conversion retains the source.
+
+Compatibility conversion is lossy and requires CPU time. HDR tone mapping and
+color-fidelity guarantees are outside this phase. Disabling compatibility retains
+source codecs where MP4 accepts them and leaves playback support to the player.
+No global FFmpeg monkeypatches or private processor-registry replacements are used;
+independent workers own separate engines, hooks, and processors.
+
+### Keep all optional artwork work after successful MP3 conversion
+
+The runner disables the engine's early thumbnail writing, although the pure
+builder expresses the thumbnail preference. The optional processor downloads
+artwork through the engine's public `urlopen` with its session and headers after
+MP3 conversion/metadata. HTTP/HTTPS validation, the engine's socket timeout, a
+10 MiB image limit, and cancellation checks bound that optional fetch.
+
+Artwork is embedded using upstream `EmbedThumbnailPP` in a private MP3 copy.
+Only successful embedding replaces the original. A network error, partial copy,
+conversion failure, or embedding error leaves the complete MP3 intact and emits
+a safe warning through both logging and a progress message. Cancellation remains
+fatal to the operation. Cleanup removes only owned temporary paths; cleanup
+failures are logged and do not turn a successfully saved MP3 into a failed task.
+Global `ignoreerrors` remains false.
+
+### Use cooperative cancellation and reap owned child processes
+
+The caller supplies a `threading.Event`. Transfer hooks and all processor hooks
+check it and raise upstream `DownloadCancelled`; MediaGrab maps this to its own
+typed cancellation and emits one terminal cancelled event. The callback runs on
+the worker's calling thread, must be fast, and must not raise. A failed callback
+aborts the operation without recursively calling that same callback for an error.
+
+MediaGrab's ffprobe/conversion commands poll cancellation while `communicate`
+drains both pipes. They terminate, then kill if necessary, and reap the child before
+returning. Probing has a 20-second timeout; conversion has a 24-hour limit plus
+cancellation. Windows flags remain confined to `core/process.py`.
+
+Upstream extraction requests and standard FFmpeg merging/audio/metadata/artwork
+processors cannot be interrupted at every instruction by an Event. Cancellation
+is checked at the next hook or operation boundary; network calls use the engine's
+socket timeout. No promise of instantaneous cancellation is made. The desktop
+shutdown implementation must account for these cooperative boundaries instead of
+terminating a Qt thread forcibly. Retry retains resumable partial media; no broad
+directory deletion occurs on cancellation.
+
+### Map diagnostics conservatively and log safe tracebacks
+
+Existing application errors retain their type. Typed cancellation, regional,
+unsupported, browser-cookie, filesystem, network, and postprocessing causes are
+mapped before extractor-message fallbacks. Explicit private/age/region/login/DRM
+diagnostics take priority over generic network text. A bare 403 is a network error,
+not proof that login is required. Unknown diagnostics remain a generic extraction
+error. Unavailable quality advises choosing Best, useful for direct media whose
+height is absent from extractor metadata. Error messages never copy raw input.
+
+Every engine logger method redacts HTTP/HTTPS URLs and suppresses text containing
+authentication diagnostics. Exception logging retains frame filenames, line
+numbers, and function names without source lines or locals, and redacts exception
+messages. This helper will also be used by desktop workers; rotating log-file
+setup remains Phase 5 work.
+
+### Keep real-network verification explicit
+
+The single network integration test retrieves Blender's small Big Buck Bunny
+trailer twice, for MP4 and MP3, and checks real stream codecs with ffprobe. It uses
+Best because the generic extractor does not know that direct file's height before
+downloading. Blender's attribution and license are recorded in NOTES and README.
+The test is skipped by default and fails on missing tools/network when enabled.
+Tests and manual media stay outside Git. Gyan binaries used for local verification
+are checksum-verified and ignored; a distributable fetch/bundle script remains
+Phase 6 work.
