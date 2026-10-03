@@ -1,5 +1,80 @@
 # Verified upstream notes
 
+## Phase 3 gate — complete, 2026-10-04
+
+The desktop prototype is implemented in the current local checkout. Phase 4 has
+not started. The historical handoff below describes the previous gate and is
+superseded by this section. Stop here until the user says `continue`.
+
+Implemented: app entry point, main window, metadata card/local demo thumbnail,
+Video/MP3 controls, quality/bitrate/folder selection, clipboard and URL drag/drop,
+queue table and progress delegate, buttons/context menu, fake analysis/download
+workers, concurrency/cancel/retry scheduler, in-memory settings and dark QSS.
+Version reporting uses core off the GUI thread. No real downloads or analysis
+are connected, and the fake worker creates no files. Core remains Qt independent.
+
+### Installed API checks and tests
+
+Qt 6.11.2 QThread.finished/wait(0), connection enums, progress-style enums and
+delegate constructors were inspected against the installed PySide6 package.
+Offscreen tests exercise actual worker execution and GUI-thread Slots. Qt's
+QComboBox converts a stored StrEnum to a string, so mode selection is explicitly
+converted back to DownloadMode at the core request boundary. Progress painting
+sets State_Horizontal. Context menus use asynchronous popup().
+
+The installed pytest-qt teardown implementation closes and deletes registered
+widgets before ordinary fixture cleanup; tests use before_close_func to finish
+asynchronous worker shutdown before widget deletion. Tests cover limits 1–4,
+FIFO scheduling, pending/active cancellation, fresh-worker retry after injected
+failure, signal affinity, GUI timer responsiveness, action buttons/context menu,
+engine-version success/failure, stale metadata, clipboard/drop, entry-point
+configuration and close during analysis/active/pending work.
+
+### Verification evidence
+
+Windows CPython 3.14.0 and PySide6/Qt 6.11.2 in the existing `.venv`:
+
+- Ruff lint: passed; formatting: **45 files already formatted**.
+- Full offline pytest: **500 passed, 1 network test skipped** in 7.74 seconds.
+- Branch-inclusive coverage: **99.14% core**, **96.49% desktop**, **98.07% combined**.
+  Original core coverage configuration and 80% threshold remain unchanged.
+- **25 desktop tests passed**; the core architectural import guard also passed.
+- Offscreen module smoke harness ran `mediagrab.desktop.app` as `__main__`, using
+  a QApplication subclass that scheduled window close, and exited **0**.
+- Offscreen dark-theme render inspected locally. The offscreen plugin has no
+  default font directory here; the render harness loaded installed Windows Segoe
+  UI for inspection only. No font or executable was added to the application.
+- No live platform requests, native interactive Windows session, frozen build or
+  GitHub CI run were verified in Phase 3. The status bar correctly reports FFmpeg
+  missing when its pair is not discoverable on the process PATH; ignored vendor
+  binaries are not added to runtime discovery.
+
+### Reproduce and launch (PowerShell, repository root)
+
+```powershell
+.\.venv\Scripts\python.exe -m ruff check .
+.\.venv\Scripts\python.exe -m ruff format --check .
+$env:QT_QPA_PLATFORM = "offscreen"
+New-Item -ItemType Directory -Force .cache/phase3 | Out-Null
+.\.venv\Scripts\python.exe -m pytest --basetemp .cache/phase3/gate --cov=mediagrab.core --cov=mediagrab.desktop --cov-report=term-missing --cov-report=xml
+git diff --check
+Get-Location
+git log --oneline -5
+git status
+```
+
+Launch the native window after clearing the test-only platform override:
+
+```powershell
+Remove-Item Env:QT_QPA_PLATFORM -ErrorAction SilentlyContinue
+.\.venv\Scripts\python.exe -m mediagrab.desktop.app
+```
+
+Analyze any valid HTTP/HTTPS URL to display labeled demo information. Add to
+queue stages a request; Download adds the selection and starts scheduling;
+Start queue starts already staged rows. Cancel/retry/remove operate on simulated
+tasks. Open folder opens the requested destination and does not create it.
+
 ## Resume here — 2026-10-04
 
 Read `AGENTS.md`, `docs/DECISIONS.md`, this section, and `README.md` before changing

@@ -18,6 +18,9 @@ DECISIONS/NOTES contracts; no separate PROJECT SPEC section was supplied.
 
 ## Phase 3 acceptance gate
 
+**Done — 2026-10-04.** Offline UI/worker gate passed; see NOTES.md for commands
+and evidence. Phase 4 requires a new user `continue`.
+
 Build desktop/app.py, main_window.py, widgets.py, workers.py, queue_manager.py,
 settings.py and resources. Use fake analysis/download workers only, with no media
 requests or writes. Clearly identify simulated metadata and progress in the UI.
