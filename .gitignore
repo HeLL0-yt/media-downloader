@@ -31,6 +31,7 @@ MANIFEST
 #   before PyInstaller builds the exe, so as to inject date/other infos into it.
 *.manifest
 *.spec
+!mediagrab.spec
 
 # Installer logs
 pip-log.txt
@@ -218,3 +219,20 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# MediaGrab: local binaries, credentials, and downloaded media
+vendor/
+*.exe
+*.dll
+*.zip
+*.7z
+*.mp4
+*.mp3
+*.m4a
+*.webm
+*.mkv
+*.part
+*.ytdl
+cookies*.txt
+cookies*.json
+audit-report.json
