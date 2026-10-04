@@ -11,16 +11,22 @@ from mediagrab.core.errors import FfmpegVersionError
 from mediagrab.core.ffmpeg import FfmpegPaths, FfmpegVersions
 from mediagrab.desktop import app, workers
 from mediagrab.desktop.main_window import MainWindow
-from mediagrab.desktop.workers import EngineVersionsWorker, Simulation
+from mediagrab.desktop.workers import EngineVersionsWorker
+from tests.desktop_fakes import Simulation
 
 
-def test_entry_point(qtbot: QtBot, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_entry_point(qtbot: QtBot, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    from mediagrab.desktop.logging_setup import configure_logging
+    from mediagrab.desktop.settings import DesktopSettings
+
+    monkeypatch.setattr(app, "configure_logging", lambda: configure_logging(tmp_path / "logs"))
+    monkeypatch.setattr(app.SettingsStore, "load", lambda self: DesktopSettings())
     application = Mock()
 
     def execute() -> int:
         window = next(w for w in QApplication.topLevelWidgets() if isinstance(w, MainWindow))
         assert window.isVisible()
-        assert "Phase 3 simulation" in window.windowTitle()
+        assert window.windowTitle() == "MediaGrab"
         window.close()
         qtbot.waitUntil(lambda: window._ready_to_close, timeout=15000)
         window.deleteLater()

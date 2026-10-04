@@ -84,9 +84,9 @@ class FormatChoice:
         if not isinstance(self.mode, DownloadMode):
             raise InvalidRequestError("Select video or audio mode.")
         if self.max_height is not None and (
-            type(self.max_height) is not int or self.max_height not in VIDEO_HEIGHTS
+            type(self.max_height) is not int or self.max_height <= 0
         ):
-            raise InvalidRequestError("Select a supported maximum video height.")
+            raise InvalidRequestError("Select a positive integer maximum video height.")
         if self.audio_bitrate is not None and (
             type(self.audio_bitrate) is not int or self.audio_bitrate not in AUDIO_BITRATES
         ):

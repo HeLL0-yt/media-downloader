@@ -1,19 +1,19 @@
-"""Launch the Phase 3 offline MediaGrab desktop prototype."""
+"""Launch the MediaGrab desktop downloader."""
 
 import logging
 import sys
-from pathlib import Path
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QGuiApplication
 from PySide6.QtWidgets import QApplication
 
+from mediagrab.desktop.logging_setup import configure_logging
 from mediagrab.desktop.main_window import MainWindow
+from mediagrab.desktop.settings import SettingsStore, apply_theme
 
 
 def main() -> int:
     """Configure native Qt high-DPI scaling, apply QSS and enter the event loop."""
-    logging.basicConfig(level=logging.INFO)
     QGuiApplication.setHighDpiScaleFactorRoundingPolicy(
         Qt.HighDpiScaleFactorRoundingPolicy.PassThrough
     )
@@ -21,12 +21,21 @@ def main() -> int:
     app.setApplicationName("MediaGrab")
     app.setOrganizationName("MediaGrab")
     app.setStyle("Fusion")
-    app.setStyleSheet(
-        (Path(__file__).parent / "resources" / "dark.qss").read_text(encoding="utf-8")
-    )
-    window = MainWindow()
-    window.show()
-    return app.exec()
+    logger = logging.getLogger("mediagrab")
+    previous = (logger.level, logger.propagate)
+    handler = configure_logging()
+    try:
+        store = SettingsStore()
+        settings = store.load()
+        apply_theme(app, settings.theme)
+        window = MainWindow(settings, settings_store=store)
+        window.show()
+        return app.exec()
+    finally:
+        logger.removeHandler(handler)
+        handler.close()
+        logger.setLevel(previous[0])
+        logger.propagate = previous[1]
 
 
 if __name__ == "__main__":

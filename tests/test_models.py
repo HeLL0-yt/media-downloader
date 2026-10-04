@@ -19,7 +19,7 @@ from mediagrab.core.models import (
 )
 
 
-@pytest.mark.parametrize("height", [None, *VIDEO_HEIGHTS])
+@pytest.mark.parametrize("height", [None, *VIDEO_HEIGHTS, 540, 999])
 @pytest.mark.parametrize("bitrate", [None, *AUDIO_BITRATES])
 def test_supported_format_choices(height: int | None, bitrate: int | None) -> None:
     choice = FormatChoice(max_height=height, audio_bitrate=bitrate)
@@ -27,7 +27,7 @@ def test_supported_format_choices(height: int | None, bitrate: int | None) -> No
     assert choice.audio_bitrate == bitrate
 
 
-@pytest.mark.parametrize("value", [0, -1, 999, "1080", True, 1080.0])
+@pytest.mark.parametrize("value", [0, -1, "1080", True, 1080.0])
 def test_invalid_heights(value: object) -> None:
     with pytest.raises(InvalidRequestError):
         FormatChoice(max_height=cast(int, value))

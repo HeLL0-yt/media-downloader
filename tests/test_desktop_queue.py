@@ -10,7 +10,7 @@ from pytestqt.qtbot import QtBot
 from mediagrab.core.models import DownloadRequest, DownloadStatus, ProgressEvent
 from mediagrab.desktop.queue_manager import QueueManager
 from mediagrab.desktop.settings import DesktopSettings
-from mediagrab.desktop.workers import FakeDownloadWorker, Simulation
+from tests.desktop_fakes import FakeDownloadWorker, Simulation
 
 
 @pytest.fixture

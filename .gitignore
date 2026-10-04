@@ -236,3 +236,5 @@ vendor/
 cookies*.txt
 cookies*.json
 audit-report.json
+
+.pytest_tmp/

@@ -7,10 +7,10 @@ from uuid import uuid4
 from PySide6.QtCore import QObject, QTimer, Signal, Slot
 
 from mediagrab.core.models import DownloadRequest, DownloadStatus, ProgressEvent
-from mediagrab.desktop.workers import FakeDownloadWorker
+from mediagrab.desktop.workers import DownloadWorker
 
 TERMINAL = frozenset({DownloadStatus.FINISHED, DownloadStatus.ERROR, DownloadStatus.CANCELLED})
-type WorkerFactory = Callable[[str, DownloadRequest], FakeDownloadWorker]
+type WorkerFactory = Callable[[str, DownloadRequest], DownloadWorker]
 
 
 @dataclass(slots=True)
@@ -31,7 +31,7 @@ class QueueManager(QObject):
     idle = Signal()
 
     def __init__(
-        self, parallel_limit: int = 2, worker_factory: WorkerFactory = FakeDownloadWorker
+        self, parallel_limit: int = 2, worker_factory: WorkerFactory = DownloadWorker
     ) -> None:
         """Initialize an inactive queue with injectable workers."""
         super().__init__()
@@ -40,7 +40,7 @@ class QueueManager(QObject):
         self.parallel_limit = parallel_limit
         self.worker_factory = worker_factory
         self.items: dict[str, QueueItem] = {}
-        self.workers: dict[str, FakeDownloadWorker] = {}
+        self.workers: dict[str, DownloadWorker] = {}
         self.running = False
         self.closing = False
 
@@ -59,6 +59,13 @@ class QueueManager(QObject):
         if not self.closing:
             self.running = True
             self._pump()
+
+    def set_parallel_limit(self, limit: int) -> None:
+        """Apply a validated limit; existing workers finish before downsizing."""
+        if type(limit) is not int or not 1 <= limit <= 4:
+            raise ValueError("Parallel limit must be an integer from 1 to 4.")
+        self.parallel_limit = limit
+        self._pump()
 
     def _pump(self) -> None:
         if not self.running or self.closing:

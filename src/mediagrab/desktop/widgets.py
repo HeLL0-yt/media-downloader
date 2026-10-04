@@ -1,4 +1,4 @@
-"""Metadata card, drag/drop input and queue table for the desktop prototype."""
+"""Metadata card, drag/drop input and queue table for the desktop downloader."""
 
 from functools import partial
 
@@ -60,7 +60,7 @@ class InfoCard(QGroupBox):
         self.thumbnail.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(self.thumbnail)
         labels = QVBoxLayout()
-        self.title = QLabel(self.tr("Analyze a URL to preview simulated information"))
+        self.title = QLabel(self.tr("Analyze a URL to preview information"))
         self.title.setWordWrap(True)
         self.title.setTextFormat(Qt.TextFormat.PlainText)
         self.uploader = QLabel()
@@ -81,6 +81,20 @@ class InfoCard(QGroupBox):
             minutes, seconds = divmod(int(info.duration), 60)
             duration = f"{minutes}:{seconds:02d}"
         self.duration.setText(self.tr("Duration: %1").replace("%1", duration))
+        self.show_thumbnail(thumbnail)
+
+    def clear_info(self) -> None:
+        """Clear metadata and artwork when the input changes."""
+        self.title.setText(self.tr("Analyze a URL to preview information"))
+        self.uploader.clear()
+        self.duration.clear()
+        self.thumbnail.clear()
+        self.thumbnail.setText(self.tr("No thumbnail"))
+
+    def show_thumbnail(self, thumbnail: bytes) -> None:
+        """Decode the optional signal-delivered preview on the GUI thread."""
+        self.thumbnail.clear()
+        self.thumbnail.setText(self.tr("No thumbnail"))
         pixmap = QPixmap()
         if pixmap.loadFromData(thumbnail):
             self.thumbnail.setPixmap(
@@ -105,6 +119,7 @@ class ProgressDelegate(QStyledItemDelegate):
         bar.progress = int(value) if value is not None else 0
         bar.text = str(index.data(Qt.ItemDataRole.DisplayRole))
         bar.textVisible = True
+        bar.textAlignment = Qt.AlignmentFlag.AlignCenter
         bar.state = option.state | QStyle.StateFlag.State_Horizontal
         bar.palette = option.palette
         widget = option.widget
@@ -143,6 +158,7 @@ class QueueTable(QTableWidget):
         self.setColumnWidth(7, 340)
         for column in range(1, 7):
             self.setColumnWidth(column, 105 if column != 3 else 145)
+        self.setColumnWidth(4, 180)
         self._ids: list[str] = []
 
     def _labels(self) -> dict[str, str]:
@@ -164,7 +180,7 @@ class QueueTable(QTableWidget):
             DownloadStatus.QUEUED: self.tr("Queued"),
             DownloadStatus.DOWNLOADING: self.tr("Downloading"),
             DownloadStatus.PROCESSING: self.tr("Processing"),
-            DownloadStatus.FINISHED: self.tr("Finished (simulated)"),
+            DownloadStatus.FINISHED: self.tr("Finished"),
             DownloadStatus.ERROR: self.tr("Error"),
             DownloadStatus.CANCELLED: self.tr("Cancelled"),
         }

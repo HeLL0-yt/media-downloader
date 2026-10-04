@@ -1,7 +1,9 @@
 """Offscreen GUI integration with fake metadata, progress and safe close."""
 
 from collections.abc import Iterator
+from io import BytesIO
 from pathlib import Path
+from threading import Event
 
 import pytest
 from PySide6.QtCore import QMimeData, QPoint, QPointF, Qt, QUrl
@@ -10,14 +12,31 @@ from PySide6.QtWidgets import QApplication, QFileDialog, QMenu, QPushButton
 from pytestqt.qtbot import QtBot
 
 from mediagrab.core import downloader
-from mediagrab.core.models import DownloadMode, DownloadRequest, DownloadStatus
+from mediagrab.core.models import DownloadMode, DownloadRequest, DownloadStatus, VideoInfo
+from mediagrab.core.validators import validate_url
+from mediagrab.desktop import workers
 from mediagrab.desktop.main_window import MainWindow
 from mediagrab.desktop.settings import DesktopSettings
-from mediagrab.desktop.workers import FakeDownloadWorker, Simulation
+from tests.desktop_fakes import FakeDownloadWorker, Simulation
 
 
 @pytest.fixture
-def window(qtbot: QtBot, tmp_path: Path) -> Iterator[MainWindow]:
+def window(qtbot: QtBot, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[MainWindow]:
+    def get_info(url: str, *, cookies_browser: str | None = None, cancel_event: Event) -> VideoInfo:
+        cancel_event.wait(0.05)
+        return VideoInfo(
+            "Fixture video",
+            validate_url(url),
+            "fixture",
+            uploader="Fixture uploader",
+            duration=125,
+            available_heights=(360, 480, 720, 1080, 1440, 2160),
+            thumbnail_url="https://example.com/thumbnail",
+        )
+
+    monkeypatch.setattr(downloader, "get_info", get_info)
+    fixture = (Path(workers.__file__).parent / "resources" / "demo.svg").read_bytes()
+    monkeypatch.setattr(workers, "urlopen", lambda *args, **kwargs: BytesIO(fixture))
     widget = MainWindow(DesktopSettings(output_dir=tmp_path))
     widget.queue.worker_factory = lambda job_id, request: FakeDownloadWorker(
         job_id, request, Simulation(0.01, 10)
@@ -41,22 +60,22 @@ def analyze(qtbot: QtBot, window: MainWindow) -> None:
 def test_window_analysis_and_download(
     qtbot: QtBot, window: MainWindow, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    def forbidden(*args: object, **kwargs: object) -> None:
-        pytest.fail("Phase 3 must not call the real downloader")
-
-    monkeypatch.setattr(downloader, "get_info", forbidden)
-    monkeypatch.setattr(downloader, "download", forbidden)
     assert window.table.columnCount() == 8
     assert not window.add_button.isEnabled()
     analyze(qtbot, window)
-    assert "simulated" in window.card.title.text()
+    assert window.card.title.text() == "Fixture video"
     assert window.card.duration.text() == "Duration: 2:05"
-    assert not window.card.thumbnail.pixmap().isNull()
+    qtbot.waitUntil(
+        lambda: (
+            window.card.thumbnail.pixmap() is not None
+            and not window.card.thumbnail.pixmap().isNull()
+        )
+    )
     qtbot.mouseClick(window.download_button, Qt.MouseButton.LeftButton)
     qtbot.waitUntil(lambda: not window.queue.workers)
     assert window.table.rowCount() == 1
     assert window.table.item(0, 4).text() == "100%"
-    assert "simulated" in window.table.item(0, 3).text()
+    assert window.table.item(0, 3).text() == "Finished"
     qtbot.waitUntil(lambda: "yt-dlp:" in window.statusBar().currentMessage(), timeout=15000)
     assert "FFmpeg:" in window.statusBar().currentMessage()
 
