@@ -1,0 +1,93 @@
+name: Windows tagged release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        shell: pwsh
+    env:
+      QT_QPA_PLATFORM: offscreen
+      PIP_DISABLE_PIP_VERSION_CHECK: '1'
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.14'
+          architecture: x64
+      - name: Install
+        run: python -m pip install ".[dev,build]"
+      - name: Validate tag and dependency consistency
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          $version = python -c "from importlib.metadata import version; import sys; sys.stdout.write(version('mediagrab'))"
+          if ($env:RELEASE_TAG -cne "v$version") { throw 'Tag must match pyproject.toml version.' }
+          python -m pip check
+          if ($LASTEXITCODE -ne 0) { throw 'Dependency check failed.' }
+      - name: Lint
+        run: python -m ruff check .
+      - name: Format
+        run: python -m ruff format --check .
+      - name: Sequential offline tests
+        run: python -m pytest --basetemp=.pytest_tmp --cov=mediagrab.core --cov=mediagrab.desktop --cov-report=term-missing
+      - name: Build, clean-PATH smoke and SHA-256
+        run: ./scripts/build_windows.ps1 -Python python
+      - name: Obtain distributor's complete corresponding source
+        # GPL static FFmpeg requires all linked sources and build scripts, not
+        # just a link to ffmpeg.org. Fail closed until the distributor provides it.
+        env:
+          SOURCE_URL: ${{ vars.MEDIAGRAB_CORRESPONDING_SOURCE_URL }}
+          SOURCE_SHA256: ${{ vars.MEDIAGRAB_CORRESPONDING_SOURCE_SHA256 }}
+        run: |
+          if ($env:SOURCE_URL -notmatch '^https://' -or $env:SOURCE_SHA256 -notmatch '^[a-fA-F0-9]{64}$') {
+            throw 'Configure the reviewed corresponding-source archive URL and SHA-256 before tagging.'
+          }
+          Invoke-WebRequest -Uri $env:SOURCE_URL -OutFile dist/MediaGrab-corresponding-source.zip
+          $hash = (Get-FileHash dist/MediaGrab-corresponding-source.zip -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($hash -ne $env:SOURCE_SHA256.ToLowerInvariant()) { throw 'Corresponding-source checksum mismatch.' }
+          "$hash  MediaGrab-corresponding-source.zip" | Set-Content dist/MediaGrab-corresponding-source.zip.sha256 -Encoding ascii
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: windows-release
+          path: |
+            dist/*.zip
+            dist/*.sha256
+          if-no-files-found: error
+          retention-days: 7
+
+  release:
+    needs: build
+    runs-on: windows-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: windows-release
+          path: release-assets
+      - name: Publish the tagged GitHub Release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          $assets = @(Get-ChildItem release-assets -File | ForEach-Object FullName)
+          gh release create $env:RELEASE_TAG --verify-tag --generate-notes --title "MediaGrab $env:RELEASE_TAG" @assets
+          if ($LASTEXITCODE -ne 0) { throw 'Release upload failed.' }
