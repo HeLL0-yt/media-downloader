@@ -1,6 +1,6 @@
 # MediaGrab
 
-A Windows desktop and command-line media downloader with a reusable Python core, powered by yt-dlp, FFmpeg and PySide6.
+MediaGrab is a Windows desktop video downloader with a graphical interface. It downloads videos from YouTube, TikTok, Instagram and other sites supported by yt-dlp as MP4 or MP3, with a download queue, FFmpeg processing and a PySide6 UI.
 
 [![CI](https://github.com/mr-ransaz/MediaGrab/actions/workflows/ci.yml/badge.svg)](https://github.com/mr-ransaz/MediaGrab/actions/workflows/ci.yml)
 [![Python 3.14](https://img.shields.io/badge/Python-3.14-blue)](pyproject.toml)
