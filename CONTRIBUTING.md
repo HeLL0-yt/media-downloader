@@ -22,7 +22,7 @@ Installation requires internet; default tests are offline. Run sequentially, wit
 
 - Keep changes focused; add meaningful tests for changed behavior.
 - Use small Conventional Commits: `docs: clarify setup`, `fix: preserve cancellation state`, `feat: add capability check`.
-- Document user behavior and limitations. At phase gates update README, SPEC, DECISIONS and NOTES, preserving the phase table in docs/PHASES.md.
+- Document user behavior and limitations. At phase gates update README, SPEC, DECISIONS and NOTES.
 - Describe the problem, resulting behavior, checks and limitations in the PR template. Follow [Code of conduct](CODE_OF_CONDUCT.md).
 
 ## Reports
