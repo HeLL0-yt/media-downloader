@@ -1,5 +1,9 @@
 # MediaGrab
 
+**Source-only: binaries are not currently distributed.** The maintainer will not
+publish a binary Release for now because the selected Gyan FFmpeg build is
+GPLv3 (libx264). Local build instructions remain available.
+
 MediaGrab is a Python 3.14 desktop application being built for Windows 10/11.
 Its download engine uses yt-dlp as a library, FFmpeg for media processing,
 and PySide6 for the interface.
@@ -498,3 +502,20 @@ MediaGrab source code is licensed under [MIT](LICENSE). Bundled dependencies and
 external tools retain their own licenses; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)
 and the shipped `_internal/licenses` directory. Redistribution of the GPL build
 requires its complete corresponding source as described in the release instructions.
+
+## Phase 6 user verification and distribution decision — 2026-10-04
+
+The user manually verified on Windows: extracted the zip into a clean folder,
+ran MediaGrab.exe, confirmed bundled ffmpeg/ffprobe/deno detection, and completed
+MP4 and MP3 downloads. This is user-reported evidence, not an automated test.
+Windows 10 and live frozen Blender checks were not run. No other manual checks
+are asserted by this report.
+
+The user decided not to publish a binary Release for now: the selected Gyan
+FFmpeg build is GPLv3 and includes libx264. The repository is source-only with
+local build instructions; binaries are not currently distributed. The retained
+release workflow requires a reviewed complete corresponding-source archive HTTPS
+URL and SHA-256 via MEDIAGRAB_CORRESPONDING_SOURCE_URL and
+MEDIAGRAB_CORRESPONDING_SOURCE_SHA256. Missing/invalid prerequisites or a checksum
+mismatch fail the build job before artifacts reach the dependent publishing job.
+Workflow inspection does not establish completeness of the supplied source.
