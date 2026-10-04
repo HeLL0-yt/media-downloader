@@ -2,10 +2,10 @@
 
 ## Current status and contracts
 
-Phases 0–4 are implemented. Phase 4 manual Windows gate passed, verified by the user on 2026-10-04, not by automated tests.
-Phase 5 is not started. Phase 4 user-reported live checks passed for YouTube,
-TikTok and Instagram 1080p MP4/MP3, cancellation, invalid URL, offline failure
-and close during download; automated tests do not establish live platform success.
+Phases 0–5 are implemented. Phase 4 manual Windows gate passed,
+verified by the user on 2026-10-04, not by automated tests.
+Phase 5's offline automated gate is passed; manual verification instructions are
+in NOTES.md. Phase 6 has not started.
 Work in the existing local checkout; no cloud, worktree, new repository or push.
 
 - Python 3.14, Windows 10/11, PySide6, yt-dlp, native FFmpeg/ffprobe.
@@ -57,12 +57,74 @@ Work in the existing local checkout; no cloud, worktree, new repository or push.
   threads only after wait(0) succeeds. It waits for upstream FFmpeg to return,
   preserving process ownership; cancellation does not force immediate shutdown.
 - Production workers contain no simulation; legacy fixtures live under tests.
-- Phase 5 environment/JS checks, updater and first-run disclaimer remain deferred.
-  Packaging/release is Phase 6; final documentation/roadmap is Phase 7.
+- Phase 5 environment/updater/disclaimer/diagnostics are implemented.
+  Packaging/release remains Phase 6; final documentation/roadmap remains Phase 7.
 - Default tests are offline. Verify unsure APIs against installed packages.
   Run pytest and app sequentially; pytest uses --basetemp=.pytest_tmp.
 - Before every final phase commit update README, SPEC, DECISIONS and NOTES,
   validate lint/format/coverage, commit locally and stop for continue.
+
+## Phase 5 environment and updater contracts
+
+- `core/environment.py` provides frozen EnvironmentItem/EnvironmentResult objects
+  with ok/warning/error severity, detail, fix hint and optional local location.
+  FFmpeg/ffprobe presence is reported individually even for incomplete pairs.
+  Downloads retain the existing complete-pair requirement.
+- Installed yt-dlp 2026.08.19 source verified: YoutubeDL.py documents `js_runtimes`
+  as `{name: {path: executable}}` and enables only Deno by default. `_js_runtimes`
+  uses `globals.supported_js_runtimes`; `utils/_jsruntime.py` defines discovery,
+  version banners and MIN_SUPPORTED_VERSION. Its version subprocesses have no
+  timeout. MediaGrab's offline probes use core/process with five-second timeouts
+  and the installed class minimums: Deno 2.3.0, Node 22, Bun 1.2.11, QuickJS
+  2023-12-09; QuickJS-ng accepts a positive version. QuickJS --help exit 1 is normal.
+- Runtime discovery checks Python scripts, the executable directory when frozen,
+  and absolute PATH folders, excludes implicit cwd and shell wrappers, and passes
+  found executable paths explicitly for both analysis and download. This is a
+  deliberate narrower search than upstream Windows cwd/PATHEXT discovery.
+  Pure build_options remains free of discovery I/O. Remote EJS fetching is off.
+- Environment startup and panel operations run on retained QThreads. Warnings
+  never disable downloads; repair hints explain the launching environment.
+- Engine release check reads official GitHub latest-stable metadata, then the
+  matching official PyPI wheel identity/checksum. HTTPS redirect downgrades are
+  refused. Socket timeout is five seconds; each response has a 30-second deadline
+  checked between reads (an in-progress read can add one socket timeout), metadata
+  limit 2 MiB and wheel limit 32 MiB. Only 2026 releases are supported by pyproject.
+- Update requires explicit user confirmation, no running downloads or analysis,
+  a venv, and a newer release. Re-read metadata to reject stale identity; verify
+  wheel bytes against official PyPI SHA-256 before pip starts. Pip verifies the
+  pinned URL hash again. No downloaded code is executed during the release check.
+- Pip uses sys.executable, argument list/no shell, --isolated, disabled config via
+  PIP_CONFIG_FILE=os.devnull, stripped PIP_* overrides, official HTTPS index,
+  binary-only dependencies and curl-cffi>=0.16,<0.17. Installed pip configuration.py
+  confirms os.devnull disables all config files even in isolated mode. Existing
+  subprocess ownership/cancellation drains pipes and reaps the pip child.
+- Pip updates are not atomic. Any attempted install holds scheduling/analysis
+  until restart; failed/cancelled updates direct users to pip check/venv repair.
+  Native teardown must follow queued result/finished delivery before releasing
+  panel state. Fast analysis results similarly preserve request identity after
+  native reaping, preventing dropped queued metadata signals.
+- Disclaimer acceptance is versioned in QSettings (`disclaimer/accepted_v1`).
+  Rejection exits; failed persistence shows a safe error and exits. Help exposes
+  disclaimer and About with app/Python/Qt/engine versions, MIT and repository link.
+- Logs retain existing rotation (2 MiB plus four backups); redact user paths and
+  authentication/URLs, and retain traceback basenames without code/locals. Copy
+  diagnostics is a structured version/status report, never raw logs or locations.
+
+## Future frozen engine update design (not implemented)
+
+Never run pip against the bundled interpreter or replace bundled files in place.
+After explicit confirmation and while idle, fetch a versioned official release
+and its official checksum manifest over HTTPS; match the exact asset SHA-256 and
+reject missing/mismatched checksums. Stage only a compatible importable engine and
+its pinned dependencies in `%LOCALAPPDATA%/MediaGrab/engine/<version>` with safe
+archive extraction (no absolute/traversal paths), size limits and manifest records.
+Validate in a separate process, then atomically switch a version pointer. At the
+next startup, validate the manifest and load the selected package ahead of the
+bundled copy before any yt-dlp import. Keep the last working engine and bundled
+fallback; rollback on import/API failures. A user-writable directory is not a
+trust boundary against a hostile local account, so verify integrity on every
+load. Frozen builds currently refuse updates; packaging compatibility, staging,
+loader and rollback tests belong to the later packaging work.
 
 ## Historical records
 

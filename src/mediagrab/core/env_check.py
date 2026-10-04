@@ -36,7 +36,7 @@ def check_environment() -> EnvironmentReport:
 
     Package presence alone does not establish that yt-dlp loaded a usable native
     request handler. This check asks the engine for its actual supported targets.
-    FFmpeg and JavaScript runtime checks remain separate, later-phase work.
+    The full FFmpeg and JavaScript report is provided by core/environment.py.
 
     Returns:
         Engine version, sorted unique targets, and actionable nonfatal warnings.

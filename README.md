@@ -4,9 +4,10 @@ MediaGrab is a Python 3.14 desktop application being built for Windows 10/11.
 Its download engine uses yt-dlp as a library, FFmpeg for media processing,
 and PySide6 for the interface.
 
-**Current status: Phases 0–4 implemented. Phase 4 automated checks are complete;
-the user manually verified the Windows platform gate as passed on 2026-10-04.
-This live verification was performed by the user, not by automated tests. Phase 5 has not started.**
+**Current status: Phases 0–5 implemented. Phase 4 Windows platform checks passed,
+verified manually by the user on 2026-10-04, not by automated tests. Phase 5's
+offline automated gate passed; its user manual checklist is in docs/NOTES.md.
+Phase 6 has not started.**
 
 ## Existing features
 
@@ -18,7 +19,14 @@ This live verification was performed by the user, not by automated tests. Phase 
 - QSettings preferences for default folder, mode/video quality/audio bitrate,
   parallelism, H.264/AAC compatibility, MP3 artwork, opt-in browser cookies and
   dark/light theme. Queued requests retain the settings used when added.
-- Safe typed error messages and rotating redacted local diagnostic logs.
+- Safe typed errors with retry guidance and rotating redacted local diagnostic logs.
+- Asynchronous startup environment checks and Settings > Engine/Environment panel:
+  engine/EJS versions, FFmpeg/ffprobe versions/locations, JavaScript runtimes and
+  real browser impersonation targets. Warnings do not disable downloads.
+- Confirmed, cancellable venv engine updater with official HTTPS metadata and
+  SHA-256 wheel verification, plus Open logs folder and Copy diagnostics.
+- First-run responsible-use acceptance, persisted in QSettings; Help exposes
+  About (versions, MIT license, repository) and the disclaimer again.
 - Clipboard/URL drag-drop input and cooperative shutdown that waits for workers.
 
 ## Desktop launch and usage
@@ -36,6 +44,14 @@ buttons or context menu for Cancel, Retry, Open folder and Remove. Active rows
 must finish cancellation before retry/removal. Settings opens the defaults dialog;
 saved preferences apply immediately and persist across launches. Browser cookies
 are disabled by default.
+
+Startup checks run on a worker. Open Settings > Engine/Environment for repair
+commands, Refresh environment, Check latest release, Update engine, logs and
+redacted diagnostics. The release check runs only when requested. Updates require
+a virtual environment, explicit confirmation and no active downloads/analysis.
+Queued downloads pause during updating; restart after any install attempt before
+using the engine again. Check/repair the venv after a cancelled or failed pip run.
+System Python and frozen-build updates are refused in Phase 5.
 
 The desktop now uses real core workers. Simulation exists only in test helpers.
 Progress is per transfer/stream; processing is distinct from success. On close,
@@ -59,8 +75,19 @@ The project uses a `src/` layout. Install it before running tests; changing
 `PYTHONPATH` is unnecessary. FFmpeg and a JavaScript runtime are external binaries,
 not Python packages. Get both FFmpeg executables from a Windows build linked on
 the [FFmpeg download page](https://ffmpeg.org/download.html), then add their shared
-folder to PATH. Automated bundling belongs to Phase 6. YouTube's external
-JavaScript runtime requirements and the startup check belong to Phase 5.
+folder to PATH. Automated bundling belongs to Phase 6. Install Deno (recommended) for YouTube:
+
+```powershell
+winget install DenoLand.Deno
+winget install Gyan.FFmpeg
+```
+
+Restart the shell and app after PATH changes. The installed yt-dlp 2026.08.19
+supports Deno ≥2.3.0, Node ≥22, Bun ≥1.2.11 and QuickJS ≥2023-12-09 (or QuickJS-ng).
+MediaGrab enables discovered supported runtime names explicitly with executable
+paths in `js_runtimes`; it searches Python's scripts directory and absolute PATH
+folders. EJS comes from the engine's default extra; remote EJS fetching is disabled.
+The startup check applies version minimums from the installed engine.
 
 ## Manual downloads
 
@@ -116,7 +143,7 @@ distributed score. Downloaded media is never committed to the repository.
 .\.venv\Scripts\python.exe -m ruff check .
 .\.venv\Scripts\python.exe -m ruff format --check .
 $env:QT_QPA_PLATFORM = "offscreen"
-.\.venv\Scripts\python.exe -m pytest --basetemp=.pytest_tmp --cov=mediagrab.core --cov-report=term-missing
+.\.venv\Scripts\python.exe -m pytest --basetemp=.pytest_tmp --cov=mediagrab.core --cov=mediagrab.desktop --cov-report=term-missing
 ```
 
 Tests marked `network` are skipped unless `--run-network` is passed. The network
@@ -197,8 +224,35 @@ Verbose output retains traceback frames and redacted exception details. Review
 diagnostics before attaching them to an issue; do not include cookies or signed
 URLs. Desktop diagnostics rotate in `%LOCALAPPDATA%/MediaGrab/logs/mediagrab.log`
 (2 MiB per file, four backups). The window shows safe messages; logs retain
-redacted traceback frames without source code or local variables. Full startup
-checks remain Phase 5 work.
+redacted traceback frames without source code or local variables. Settings >
+Engine/Environment provides Open logs folder and Copy diagnostics. Copied reports
+include versions and capability status, excluding raw logs, executable locations,
+private folder paths, cookies and signed URLs. Local panel locations are shown
+for troubleshooting; log messages redact user paths and frames retain basenames.
+
+### Environment and engine updates
+
+Missing EJS/JavaScript/impersonation support produces warnings. Missing or broken
+FFmpeg/ffprobe is an error because downloads require a working pair in one folder.
+Use the panel's install commands with the Python environment launching MediaGrab.
+For network failures, check the connection and retry. Login and age restrictions
+require permitted browser access and explicit cookie opt-in before retrying.
+Geo-blocked media must be made available by the platform; repeated retries do not
+grant access. Unavailable quality: re-analyze and choose Best or another quality.
+
+Check latest release uses the official GitHub API and official PyPI metadata via
+HTTPS, five-second socket timeouts and bounded responses. The updater accepts only
+stable releases inside the project's supported 2026 engine range. It verifies the
+official PyPI wheel SHA-256 before pip starts; pip verifies the URL hash again.
+Pip uses this interpreter, no shell, isolated configuration, the official HTTPS
+PyPI index, binary-only dependencies and the project's curl-cffi bounds. Updater
+output is captured and redacted in rotating logs. No automatic update occurs.
+
+Pip installation is not transactional. After failure/cancellation run the same
+venv's `python -m pip check`; repair using `python -m pip install --editable .`
+if required, then restart. Test installation/cancellation in a disposable venv,
+not the development venv: see [Phase 5 manual checklist](docs/NOTES.md#phase-5-manual-verification-checklist).
+Frozen updating is designed in DECISIONS.md and deliberately unimplemented.
 
 ## Project structure
 
@@ -231,8 +285,8 @@ Qt signals. Windows-specific integration will be isolated from the core.
 | 1 | Models, errors, validation, FFmpeg discovery, options | Implemented |
 | 2 | Downloader, error mapping, cancellation, CLI, integration test | Implemented |
 | 3 | Desktop layout and fake worker | Implemented |
-| 4 | Real workers, queue, progress, settings, local logs and typed errors | Implemented |
-| 5 | Full environment checks, updater, first-run disclaimer | Pending |
+| 4 | Real workers, queue, progress, settings, local logs and typed errors | Implemented; user manual gate passed |
+| 5 | Environment checks, confirmed venv updater, disclaimer/About, diagnostics and error UX | Implemented; automated gate passed |
 | 6 | Windows packaging and tagged release workflow | Pending |
 | 7 | Full documentation, screenshots, contribution guide, roadmap | Pending |
 

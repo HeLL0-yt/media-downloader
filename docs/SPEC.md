@@ -40,13 +40,36 @@ Phase 4 automated gate: Ruff lint/format and sequential pytest-qt offscreen with
 mocked core calls, coverage and --basetemp=.pytest_tmp. Default tests make no media
 network requests. Manual user gate: 1080p MP4 and MP3 on YouTube/TikTok/Instagram,
 cancel mid-download, invalid URL, offline failure and close during download.
-Implementation is complete; live platform checks remain pending. Stop here for
-user continue; do not start Phase 5.
+The user manually verified this Windows gate as passed on 2026-10-04. These live
+checks were performed by the user, not by automated tests.
 
-## Remaining roadmap (not Phase 4 work)
+## Phase 5 — implemented, 2026-10-04
 
-5. Full environment/JS/impersonation checks, updater and first-run disclaimer.
-   Rotating logs and typed-error presentation are already implemented in Phase 4.
+- Qt-independent immutable environment items report severity, versions, tool
+  locations and repair hints. Reuse the offline impersonation capability adapter.
+  Probe external JS tools with finite timeouts and installed-engine version rules;
+  explicitly configure found runtime paths for analysis and downloads. Disable
+  remote EJS fetching. Warnings remain nonfatal.
+- Startup checks run asynchronously; a non-modal Settings > Engine/Environment
+  panel exposes refresh, repair commands, current engine version and diagnostics.
+- Latest stable release checks are explicit, HTTPS-only, offline-safe and bounded.
+  Confirmed venv updates revalidate official metadata, verify PyPI wheel SHA-256,
+  and invoke current-interpreter pip with argument lists, isolated config, binary
+  dependencies, captured redacted output and cancellation. Refuse while downloads
+  or analysis are active; pause scheduling and require restart after any attempt.
+  Refuse frozen/system updates and releases outside the project dependency range.
+- QSettings stores versioned first-run disclaimer acceptance. Rejection exits;
+  Help/About shows versions, MIT license, repository and disclaimer.
+- Open logs folder and Copy diagnostics exclude sensitive material from shared
+  reports. Logs redact user paths and retain traceback basenames. Typed errors
+  explain network/login/age/geo/quality/FFmpeg recovery without bypassing access.
+- Offline pytest-qt tests mock environment/updater/network/pip. Ruff and sequential
+  coverage checks pass; manual user verification is listed in NOTES.md.
+
+Stop at the Phase 5 gate. Phase 6 requires a new user continue.
+
+## Remaining roadmap (not Phase 5 work)
+
 6. PyInstaller onedir/noconsole, verified binary fetch/build scripts, clean-path
    validation and Windows release workflow; never commit executable binaries.
 7. Final README, badges/screenshots/architecture/usage/build/troubleshooting,
