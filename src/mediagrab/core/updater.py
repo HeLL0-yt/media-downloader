@@ -133,7 +133,7 @@ def update_engine(
     if downloads_active:
         raise UpdateError("Finish or cancel all downloads before updating the engine.")
     if getattr(sys, "frozen", False):
-        raise UpdateError("Frozen engine updates are not implemented in this phase.")
+        raise UpdateError("Update MediaGrab to get a newer engine. Bundled engines cannot use pip.")
     if sys.prefix == sys.base_prefix:
         raise UpdateError("Use a virtual environment to update the engine safely.")
     # Do not trust a stale or caller-created download URL/hash. Re-read official metadata.

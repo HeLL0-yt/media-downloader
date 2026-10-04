@@ -1,3 +1,5 @@
 """MediaGrab desktop application and GUI-independent download engine."""
 
-__version__: str = "0.1.0"
+from importlib.metadata import version
+
+__version__: str = version("mediagrab")

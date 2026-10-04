@@ -57,9 +57,11 @@ def runtime_options() -> dict[str, dict[str, str]]:
     Search Python's scripts folder and absolute PATH directories, excluding cwd.
     Runtime support/version rules remain owned by the installed engine.
     """
-    directories = [Path(sysconfig.get_path("scripts"))]
-    if getattr(sys, "frozen", False):
-        directories.append(Path(sys.executable).parent)
+    directories = (
+        [Path(sys.executable).parent, Path(getattr(sys, "_MEIPASS", Path(sys.executable).parent))]
+        if getattr(sys, "frozen", False)
+        else [Path(sysconfig.get_path("scripts"))]
+    )
     directories.extend(
         Path(entry)
         for entry in os.environ.get("PATH", "").split(os.pathsep)

@@ -4,17 +4,22 @@ import logging
 import sys
 
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QGuiApplication
+from PySide6.QtGui import QGuiApplication, QIcon
 from PySide6.QtWidgets import QApplication, QMessageBox
 
 from mediagrab.desktop.about import ensure_disclaimer
 from mediagrab.desktop.logging_setup import configure_logging
 from mediagrab.desktop.main_window import MainWindow
 from mediagrab.desktop.settings import SettingsStore, apply_theme
+from mediagrab.resources import resource_path
 
 
 def main() -> int:
     """Configure native Qt high-DPI scaling, apply QSS and enter the event loop."""
+    if "--self-check" in sys.argv or "--smoke-test" in sys.argv:
+        from mediagrab.self_check import main as check_main
+
+        return check_main(sys.argv[1:])
     QGuiApplication.setHighDpiScaleFactorRoundingPolicy(
         Qt.HighDpiScaleFactorRoundingPolicy.PassThrough
     )
@@ -22,6 +27,7 @@ def main() -> int:
     app.setApplicationName("MediaGrab")
     app.setOrganizationName("MediaGrab")
     app.setStyle("Fusion")
+    app.setWindowIcon(QIcon(str(resource_path("mediagrab.ico"))))
     logger = logging.getLogger("mediagrab")
     previous = (logger.level, logger.propagate)
     handler = configure_logging()

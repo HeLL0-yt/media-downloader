@@ -29,6 +29,7 @@ from mediagrab.core.models import (
     DownloadMode,
     FormatChoice,
 )
+from mediagrab.resources import resource_path
 
 
 @dataclass(frozen=True, slots=True)
@@ -203,5 +204,5 @@ class SettingsDialog(QDialog):
 
 def apply_theme(application: QApplication, theme: str) -> None:
     """Apply the selected packaged theme to the application."""
-    stylesheet = (Path(__file__).parent / "resources" / f"{theme}.qss").read_text(encoding="utf-8")
+    stylesheet = resource_path(f"{theme}.qss").read_text(encoding="utf-8")
     application.setStyleSheet(stylesheet)

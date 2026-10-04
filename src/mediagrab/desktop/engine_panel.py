@@ -56,7 +56,11 @@ class EnginePanel(QDialog):
         self.details = QPlainTextEdit("Checking environment…")
         self.details.setReadOnly(True)
         layout.addWidget(self.details)
-        self.status = QLabel("Engine updates require confirmation and an idle download queue.")
+        self.status = QLabel(
+            "Update MediaGrab to get a newer engine. Bundled engines cannot use pip."
+            if getattr(sys, "frozen", False)
+            else "Engine updates require confirmation and an idle download queue."
+        )
         self.status.setWordWrap(True)
         layout.addWidget(self.status)
         row = QHBoxLayout()
@@ -122,7 +126,13 @@ class EnginePanel(QDialog):
             self.release = result
             self.status.setText(
                 f"Latest official release: {result.version}. "
-                + ("Update available." if is_newer(result) else "Engine is current.")
+                + (
+                    "Update MediaGrab to get a newer engine."
+                    if getattr(sys, "frozen", False)
+                    else "Update available."
+                    if is_newer(result)
+                    else "Engine is current."
+                )
             )
         else:
             self.restart_required = True
@@ -157,12 +167,19 @@ class EnginePanel(QDialog):
         self.refresh.setEnabled(not self.restart_required)
         self.latest.setEnabled(not self.restart_required)
         self.update.setEnabled(
-            bool(self.release and is_newer(self.release)) and not self.restart_required
+            bool(self.release and is_newer(self.release))
+            and not self.restart_required
+            and not getattr(sys, "frozen", False)
         )
 
     @Slot()
     def confirm_update(self) -> None:
         """Require explicit confirmation and an idle engine before creating pip work."""
+        if getattr(sys, "frozen", False):
+            self.status.setText(
+                "Update MediaGrab to get a newer engine. Bundled engines cannot use pip."
+            )
+            return
         if self.worker is not None or self.release is None or self.restart_required:
             return
         if self.busy():
