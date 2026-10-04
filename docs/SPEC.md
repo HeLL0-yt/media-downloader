@@ -8,18 +8,18 @@ DECISIONS/NOTES contracts; no separate PROJECT SPEC section was supplied.
 
 ## Completed phases
 
-- **Phase 0 — done:** src packaging, dependency bounds, Windows CI and offline tests.
-- **Phase 1 — done:** immutable models, typed errors, URL/destination validation,
+- **Phase 0 â€” done:** src packaging, dependency bounds, Windows CI and offline tests.
+- **Phase 1 â€” done:** immutable models, typed errors, URL/destination validation,
   FFmpeg discovery/version checks and pure yt-dlp options.
-- **Phase 2 — done:** metadata extraction, downloads, cancellation with
+- **Phase 2 â€” done:** metadata extraction, downloads, cancellation with
   threading.Event, error mapping, H.264/AAC compatibility conversion, optional
   MP3 artwork, manual CLI, curl-cffi impersonation support, offline capability
   checks and quiet CLI tracebacks unless --verbose.
 
 ## Phase 3 acceptance gate
 
-**Done — 2026-10-04.** Offline UI/worker gate passed; see NOTES.md for commands
-and evidence. Phase 4 requires a new user `continue`.
+**Done â€” 2026-10-04.** Offline UI/worker gate passed; see NOTES.md for commands
+and evidence. The current request authorizes Phase 4.
 
 Build desktop/app.py, main_window.py, widgets.py, workers.py, queue_manager.py,
 settings.py and resources. Use fake analysis/download workers only, with no media
@@ -45,7 +45,7 @@ requests or writes. Clearly identify simulated metadata and progress in the UI.
 ## Remaining roadmap (not Phase 3 work)
 
 4. Real analysis/download adapters, settings dialog and QSettings; folder,
-   mode/quality, parallelism 1–4, compatibility, artwork, browser cookies, theme.
+   mode/quality, parallelism 1â€“4, compatibility, artwork, browser cookies, theme.
 5. Full environment/JS/impersonation checks, updater, first-run disclaimer,
    rotating local logs and polished error UX.
 6. PyInstaller onedir/noconsole, verified binary fetch/build scripts, clean-path
@@ -64,3 +64,10 @@ on_progress with immutable ProgressEvent on its calling worker thread.
 threading.Event cancellation is cooperative. Processing is distinct from success.
 Unknown metadata remains unknown. See DECISIONS.md for detailed path, playlist,
 compatibility, logging and cancellation constraints; NOTES.md records evidence.
+
+## Phase-gate checklist
+
+Update README.md together with SPEC.md, DECISIONS.md and NOTES.md before every
+final phase commit; describe implemented features only. Run lint/format and
+sequential offline pytest with coverage and --basetemp=.pytest_tmp, commit locally,
+report the gate and stop for continue.

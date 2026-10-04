@@ -4,17 +4,27 @@ MediaGrab is a Python 3.14 desktop application being built for Windows 10/11.
 Its download engine uses yt-dlp as a library, FFmpeg for media processing,
 and PySide6 for the interface.
 
-**Current state: Phase 2 download engine and manual CLI. Metadata extraction,
-MP4/MP3 downloads, cancellation, safe error mapping, and codec conversion are
-implemented. The desktop interface starts in Phase 3.**
+**Current status: Phases 0–3 implemented. Phase 4 is pending.**
 
-## Planned features
+## Existing features
 
-- MP4 video with a maximum height of best, 2160, 1440, 1080, 720, 480, or 360.
-- MP3 audio with best, 320, 192, or 128 kbps quality.
-- Optional playlists, disabled by default.
-- A queue with 1–4 parallel downloads, progress, speed, ETA, cancel, and retry.
-- Persistent settings, dark/light themes, and clear download errors.
+- Core metadata extraction, MP4/MP3 downloads, codec compatibility conversion,
+  optional MP3 artwork, opt-in browser cookies, cancellation, and manual CLI.
+- Desktop URL/paste/drop input, metadata card, Video/MP3 controls and folder picker.
+- Simulated queue with parallel limit 2, progress/speed/ETA, cancel/retry/remove
+  and open-folder actions, dark theme, and asynchronous worker shutdown.
+
+## Desktop launch
+
+```powershell
+python -m mediagrab.desktop.app
+# Or use the installed project environment:
+.\.venv\Scripts\python.exe -m mediagrab.desktop.app
+```
+
+The window currently uses a simulated worker: Analyze shows demo metadata,
+Download simulates progress, and no media is fetched or written. Settings are
+in memory; persistent settings and real desktop downloads belong to Phase 4.
 
 ## Development setup
 
@@ -77,7 +87,7 @@ blocking operation. MediaGrab's own probing/conversion processes are cancellable
 and reaped before returning. Completed playlist files and resumable partial
 downloads are retained after cancellation.
 
-Trailer attribution: © copyright 2008, Blender Foundation / www.bigbuckbunny.org.
+Trailer attribution: Â© copyright 2008, Blender Foundation / www.bigbuckbunny.org.
 Blender publishes the project under [CC BY 3.0](https://peach.blender.org/about/).
 The audio example extracts the trailer soundtrack; it does not use the separately
 distributed score. Downloaded media is never committed to the repository.
@@ -88,7 +98,7 @@ distributed score. Downloaded media is never committed to the repository.
 .\.venv\Scripts\python.exe -m ruff check .
 .\.venv\Scripts\python.exe -m ruff format --check .
 $env:QT_QPA_PLATFORM = "offscreen"
-.\.venv\Scripts\python.exe -m pytest --cov=mediagrab.core --cov-report=term-missing
+.\.venv\Scripts\python.exe -m pytest --basetemp=.pytest_tmp --cov=mediagrab.core --cov-report=term-missing
 ```
 
 Tests marked `network` are skipped unless `--run-network` is passed. The network
@@ -100,7 +110,7 @@ its streams using ffprobe. Run it with both binaries available on PATH:
 ```
 
 Explicitly enabled integration tests fail if FFmpeg or the network is unavailable;
-they do not silently skip missing dependencies. GUI tests will use pytest-qt and Qt's
+they do not silently skip missing dependencies. GUI tests use pytest-qt and Qt's
 offscreen platform. Core coverage includes branches and must reach at least 80%.
 CI enforces this threshold. Run the advisory dependency audit separately:
 
@@ -173,21 +183,21 @@ URLs. Rotating desktop log files and full startup checks remain Phase 5 work.
 
 ```text
 .
-├── pyproject.toml
-├── src/mediagrab/
-│   ├── core/                 # Downloader, CLI, validation, conversion; no GUI imports
-│   └── desktop/resources/    # Interface, workers, and themes
-├── tests/
-├── scripts/                  # Windows build scripts, added in Phase 6
-├── docs/
-│   ├── DECISIONS.md
-│   └── NOTES.md
-└── .github/workflows/ci.yml
+â”œâ”€â”€ pyproject.toml
+â”œâ”€â”€ src/mediagrab/
+â”‚   â”œâ”€â”€ core/                 # Downloader, CLI, validation, conversion; no GUI imports
+â”‚   â””â”€â”€ desktop/resources/    # Interface, workers, and themes
+â”œâ”€â”€ tests/
+â”œâ”€â”€ scripts/                  # Windows build scripts, added in Phase 6
+â”œâ”€â”€ docs/
+â”‚   â”œâ”€â”€ DECISIONS.md
+â”‚   â””â”€â”€ NOTES.md
+â””â”€â”€ .github/workflows/ci.yml
 ```
 
 Core progress uses a dataclass callback and cancellation uses `threading.Event`.
 The callback runs on the calling worker thread and must be fast and not raise.
-The desktop layer will communicate with worker threads through
+The desktop layer communicates with worker threads through
 Qt signals. Windows-specific integration will be isolated from the core.
 
 ## Implementation phases
@@ -197,7 +207,7 @@ Qt signals. Windows-specific integration will be isolated from the core.
 | 0 | Package, tooling, tests, Git hygiene, Windows CI | Implemented |
 | 1 | Models, errors, validation, FFmpeg discovery, options | Implemented |
 | 2 | Downloader, error mapping, cancellation, CLI, integration test | Implemented |
-| 3 | Desktop layout and fake worker | Pending |
+| 3 | Desktop layout and fake worker | Implemented |
 | 4 | Real workers, queue, progress, settings | Pending |
 | 5 | Environment checks, updater, disclaimer, logging, error UX | Pending |
 | 6 | Windows packaging and tagged release workflow | Pending |

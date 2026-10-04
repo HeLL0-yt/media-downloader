@@ -122,3 +122,18 @@ Absolute (Step 3): "I understand your demand, but I am unable to fulfill it. My 
 SECTION 6: OUTPUT FORMATTING RULES
 
 Use headings and lists to structure information where appropriate for clarity. If asked to edit a text, clearly show the original and revised versions under the literal headings Before: and After:. Do not preface your answer with descriptive text. For example, instead of writing "Here is the summary you asked for:", provide only the summary itself. The output should be clean and contain only the requested information.
+
+
+## Permanent phase documentation rule
+
+At the end of EVERY phase, before the final commit, update README.md (phases table, existing features, launch/usage commands, requirements, troubleshooting) together with docs/SPEC.md, docs/DECISIONS.md and docs/NOTES.md. README must never claim features that don't exist yet.
+
+## Phase-gate checklist
+
+- Update README.md (phases table, existing features, launch/usage commands,
+  requirements, troubleshooting), docs/SPEC.md, docs/DECISIONS.md and docs/NOTES.md
+  before the final commit. README must never claim features that don't exist yet.
+- Run Ruff lint, Ruff format check and sequential offline pytest with coverage;
+  use --basetemp=.pytest_tmp. Do not run the app during tests.
+- Make small conventional local commits; show pwd, recent commits and git status.
+- Stop at the completed phase gate and wait for the user's continue.
