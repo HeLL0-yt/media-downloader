@@ -215,7 +215,7 @@ Workflow inspection does not establish completeness of the supplied source.
 
 ## Phase 7 documentation decisions — 2026-10-04
 
-- Public README replaces internal phase detail with links to PHASES/HISTORY/NOTES.
+- Public README replaces internal phase detail.
   The AGENTS phase-table rule is satisfied through the linked maintained table;
   the user explicitly requested moving it out of README.
 - Split interview-oriented architecture, development commands and detailed local
