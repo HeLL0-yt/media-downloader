@@ -1,6 +1,6 @@
 # Contributing
 
-Read [Development](docs/DEVELOPMENT.md) and [Architecture](docs/ARCHITECTURE.md). Keep core independent of Qt. Use Windows and CPython 3.14 x64.
+Read [Development](docs/DEVELOPMENT.md), [Architecture](docs/ARCHITECTURE.md) and [AGENTS.md](AGENTS.md). Keep core independent of Qt. Use Windows and CPython 3.14 x64.
 
 ## Setup and checks
 
@@ -22,7 +22,7 @@ Installation requires internet; default tests are offline. Run sequentially, wit
 
 - Keep changes focused; add meaningful tests for changed behavior.
 - Use small Conventional Commits: `docs: clarify setup`, `fix: preserve cancellation state`, `feat: add capability check`.
-- Document user behavior and limitations. At phase gates update README, SPEC, DECISIONS and NOTES.
+- Document user behavior and limitations. At phase gates update README, SPEC, DECISIONS and NOTES, preserving the phase table in docs/PHASES.md.
 - Describe the problem, resulting behavior, checks and limitations in the PR template. Follow [Code of conduct](CODE_OF_CONDUCT.md).
 
 ## Reports

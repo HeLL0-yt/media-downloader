@@ -96,4 +96,5 @@ Keep pure options separate from discovery I/O, adapt typed core data at the GUI
 boundary and retain workers through teardown. Add new front ends against core
 contracts instead of importing desktop. Reverify upstream private adapters/error
 patterns during engine upgrades. See [Architecture](ARCHITECTURE.md) for costs and
-limitations, [Contributing](../CONTRIBUTING.md) for reports/commit style
+limitations, [Contributing](../CONTRIBUTING.md) for reports/commit style and
+[Phases](PHASES.md) for historical scope.
