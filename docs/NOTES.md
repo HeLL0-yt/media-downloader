@@ -2,21 +2,34 @@
 
 ## Current status and contracts
 
-Phases 0–3 are implemented; Phase 4 is authorized by the current request.
-The Phase 3 window still uses simulated analysis/downloads and writes no media.
+Phases 0–4 are implemented; Phase 4 awaits manual checks and user continue.
+The desktop now calls the real core API. Phase 5 has not started.
 Core is Qt independent. Current contracts are in SPEC.md and DECISIONS.md.
 
-Last completed gate (Phase 3, 2026-10-04):
-- Windows CPython 3.14.0, PySide6/Qt 6.11.2, yt-dlp 2026.08.19.
-- Ruff lint and format passed (45 files).
-- Offline pytest: 500 passed, 1 network test skipped.
-- Branch coverage: core 99.14%, desktop 96.49%, combined 98.07%.
-- Offscreen entry-point smoke exited 0; no live platform tests were performed.
-- Local curl-cffi 0.16.3 exposed 38 impersonation targets during Phase 2.
-- Ignored vendor/ffmpeg contains local validation tools, not bundled runtime tools.
-  Runtime discovery requires ffmpeg and ffprobe together on an absolute PATH.
-- yt-dlp default extra supplies EJS, not an external JavaScript runtime.
-  Full runtime startup detection/configuration remains Phase 5.
+## Phase 4 evidence — 2026-10-04
+
+- Existing local .venv: Windows CPython 3.14.0, PySide6/Qt 6.11.2,
+  yt-dlp 2026.08.19. No new repository, worktree, cloud task or push.
+- Installed Qt APIs checked: QSettings backend, QFormLayout.setRowVisible,
+  QStyleOptionProgressBar.textAlignment; actual usage exercised offscreen.
+- Installed yt-dlp FFmpeg processor source inspected: upstream operations own
+  synchronous children. Close waits for return; no thread/process abandonment.
+- Real workers tested with mocked get_info/download and mocked thumbnail HTTP.
+  Coverage includes progress order/path, cancel/retry/error mapping, limits 1–4,
+  canonical metadata URLs, thumbnail limits/failures, QSettings round trip and
+  corrupt-value recovery, preferences/theme, rotating/redacted logs and active close.
+- Offscreen dark-theme render inspected: aligned form grid, wider centered
+  percentage bars and larger queue. Fixture metadata only; no network request.
+- Final gate: Ruff check passed; Ruff format --check passed (50 files).
+- Sequential offline pytest --basetemp=.pytest_tmp: 543 passed, 1 network test
+  skipped in 8.09 seconds. 36 new mocked-core/settings/log tests passed.
+- Branch-inclusive coverage: core 99.14%, desktop 95.33%, combined
+  97.25%, above the unchanged 80% threshold. Architectural import guard passed.
+- Earlier Phase 3 evidence: 500 passed, 1 skipped; core 99.14%, desktop 96.49%.
+- curl-cffi 0.16.3 exposed 38 targets in Phase 2. Ignored vendor/ffmpeg binaries
+  are local test tools, not packaged tools or part of runtime discovery.
+- EJS is installed by yt-dlp default extra; an external JS runtime is still needed
+  for full YouTube support. Full startup/runtime configuration remains Phase 5.
 
 ## Phase-gate checklist
 
@@ -48,3 +61,12 @@ YouTube/TikTok/Instagram desktop behavior or account-dependent URLs.
 
 Full older per-phase evidence and installed-source references are preserved in
 [HISTORY.md](HISTORY.md). Historical pending-phase wording is superseded above.
+
+## Pending manual gate
+
+Use media you have permission to download. Through the window, test 1080p MP4
+and MP3 from each of YouTube, TikTok and Instagram (select a source that offers
+1080p); then cancel mid-download, invalid URL, no internet and close during an
+active download. Verify final files/playback, terminal statuses, retry and process
+exit. Shutdown may wait for upstream cancellation boundaries. No live platform
+success is claimed from mocked/offscreen tests. Stop for user continue.

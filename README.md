@@ -4,17 +4,23 @@ MediaGrab is a Python 3.14 desktop application being built for Windows 10/11.
 Its download engine uses yt-dlp as a library, FFmpeg for media processing,
 and PySide6 for the interface.
 
-**Current status: Phases 0–3 implemented. Phase 4 is pending.**
+**Current status: Phases 0–4 implemented. Phase 4 automated checks are complete;
+manual platform checks are pending. Phase 5 has not started.**
 
 ## Existing features
 
-- Core metadata extraction, MP4/MP3 downloads, codec compatibility conversion,
-  optional MP3 artwork, opt-in browser cookies, cancellation, and manual CLI.
-- Desktop URL/paste/drop input, metadata card, Video/MP3 controls and folder picker.
-- Simulated queue with parallel limit 2, progress/speed/ETA, cancel/retry/remove
-  and open-folder actions, dark theme, and asynchronous worker shutdown.
+- Real desktop and CLI metadata extraction and MP4/MP3 downloads through yt-dlp.
+- Metadata card with title, uploader, duration and asynchronous optional thumbnail.
+  Video quality choices come from reported heights; Best handles unknown heights.
+- Queue with 1–4 parallel downloads (default 2), per-task progress/speed/ETA,
+  cancel, retry, remove and open folder.
+- QSettings preferences for default folder, mode/video quality/audio bitrate,
+  parallelism, H.264/AAC compatibility, MP3 artwork, opt-in browser cookies and
+  dark/light theme. Queued requests retain the settings used when added.
+- Safe typed error messages and rotating redacted local diagnostic logs.
+- Clipboard/URL drag-drop input and cooperative shutdown that waits for workers.
 
-## Desktop launch
+## Desktop launch and usage
 
 ```powershell
 python -m mediagrab.desktop.app
@@ -22,9 +28,20 @@ python -m mediagrab.desktop.app
 .\.venv\Scripts\python.exe -m mediagrab.desktop.app
 ```
 
-The window currently uses a simulated worker: Analyze shows demo metadata,
-Download simulates progress, and no media is fetched or written. Settings are
-in memory; persistent settings and real desktop downloads belong to Phase 4.
+Paste a URL and select Analyze. Choose Video (MP4) or MP3, quality and output
+folder. Download adds the selection and starts the queue; Add to queue stages it
+until the queue is started, or joins an already running queue. Use each row's
+buttons or context menu for Cancel, Retry, Open folder and Remove. Active rows
+must finish cancellation before retry/removal. Settings opens the defaults dialog;
+saved preferences apply immediately and persist across launches. Browser cookies
+are disabled by default.
+
+The desktop now uses real core workers. Simulation exists only in test helpers.
+Progress is per transfer/stream; processing is distinct from success. On close,
+the window shows Stopping workers and remains open until all workers exit.
+Upstream extraction/FFmpeg operations finish at cooperative cancellation
+boundaries; immediate cancellation is not guaranteed. No running thread is
+forcibly terminated, and worker ownership is retained throughout shutdown.
 
 ## Development setup
 
@@ -87,7 +104,7 @@ blocking operation. MediaGrab's own probing/conversion processes are cancellable
 and reaped before returning. Completed playlist files and resumable partial
 downloads are retained after cancellation.
 
-Trailer attribution: Â© copyright 2008, Blender Foundation / www.bigbuckbunny.org.
+Trailer attribution: © copyright 2008, Blender Foundation / www.bigbuckbunny.org.
 Blender publishes the project under [CC BY 3.0](https://peach.blender.org/about/).
 The audio example extracts the trailer soundtrack; it does not use the separately
 distributed score. Downloaded media is never committed to the repository.
@@ -177,22 +194,27 @@ the command with `--verbose` when diagnosing a problem:
 
 Verbose output retains traceback frames and redacted exception details. Review
 diagnostics before attaching them to an issue; do not include cookies or signed
-URLs. Rotating desktop log files and full startup checks remain Phase 5 work.
+URLs. Desktop diagnostics rotate in `%LOCALAPPDATA%/MediaGrab/logs/mediagrab.log`
+(2 MiB per file, four backups). The window shows safe messages; logs retain
+redacted traceback frames without source code or local variables. Full startup
+checks remain Phase 5 work.
 
 ## Project structure
 
 ```text
 .
-â”œâ”€â”€ pyproject.toml
-â”œâ”€â”€ src/mediagrab/
-â”‚   â”œâ”€â”€ core/                 # Downloader, CLI, validation, conversion; no GUI imports
-â”‚   â””â”€â”€ desktop/resources/    # Interface, workers, and themes
-â”œâ”€â”€ tests/
-â”œâ”€â”€ scripts/                  # Windows build scripts, added in Phase 6
-â”œâ”€â”€ docs/
-â”‚   â”œâ”€â”€ DECISIONS.md
-â”‚   â””â”€â”€ NOTES.md
-â””â”€â”€ .github/workflows/ci.yml
+├── pyproject.toml
+├── src/mediagrab/
+│   ├── core/                 # Downloader, CLI, validation, conversion; no GUI imports
+│   └── desktop/              # Interface, real workers, queue, settings, log setup, themes
+├── tests/
+├── scripts/                  # Windows build scripts, added in Phase 6
+├── docs/
+│   ├── DECISIONS.md
+│   ├── NOTES.md
+│   ├── SPEC.md
+│   └── HISTORY.md
+└── .github/workflows/ci.yml
 ```
 
 Core progress uses a dataclass callback and cancellation uses `threading.Event`.
@@ -208,12 +230,12 @@ Qt signals. Windows-specific integration will be isolated from the core.
 | 1 | Models, errors, validation, FFmpeg discovery, options | Implemented |
 | 2 | Downloader, error mapping, cancellation, CLI, integration test | Implemented |
 | 3 | Desktop layout and fake worker | Implemented |
-| 4 | Real workers, queue, progress, settings | Pending |
-| 5 | Environment checks, updater, disclaimer, logging, error UX | Pending |
+| 4 | Real workers, queue, progress, settings, local logs and typed errors | Implemented |
+| 5 | Full environment checks, updater, first-run disclaimer | Pending |
 | 6 | Windows packaging and tagged release workflow | Pending |
 | 7 | Full documentation, screenshots, contribution guide, roadmap | Pending |
 
-Each phase ends with lint/test results and a commit. The next phase requires an
+Each phase ends with README/SPEC/DECISIONS/NOTES updates, lint/test results and a commit. The next phase requires an
 explicit `continue`.
 
 ## Privacy and security

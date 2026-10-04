@@ -2,7 +2,8 @@
 
 ## Current status and contracts
 
-Phases 0–3 are implemented. The current request authorizes Phase 4 only.
+Phases 0–4 are implemented. Phase 4 awaits manual checks and user continue.
+Phase 5 is not started.
 Work in the existing local checkout; no cloud, worktree, new repository or push.
 
 - Python 3.14, Windows 10/11, PySide6, yt-dlp, native FFmpeg/ffprobe.
@@ -28,10 +29,32 @@ Work in the existing local checkout; no cloud, worktree, new repository or push.
   Diagnostic tracebacks retain redacted frames without source code or locals.
 - Core check_environment reports yt-dlp/impersonation targets offline; its private
   upstream adapter must be reverified when upgrading the engine.
-- Phase 3 uses simulated analysis/downloads, real version probes, dark QSS,
-  signal-only workers and an injectable queue scheduler (default 2, range 1–4).
-- Phase 4 connects real workers, thumbnails, queue controls and QSettings/dialog;
-  this request also brings rotating local logs and typed error UX into Phase 4.
+- Real AnalysisWorker calls get_info with opt-in browser and the same cancel Event.
+  Analysis result keeps the existing (VideoInfo, bytes) signal; initial bytes are
+  empty. A separate ThumbnailWorker reads HTTP/HTTPS with 10-second socket timeout,
+  10 MiB size limit and cancellation checks. GUI decoding rejects stale snapshots.
+- Stale analysis checks the submitted URL, not the canonical returned page URL.
+- DownloadWorker bridges the core callback, preserving processing/progress order;
+  typed exceptions produce one safe terminal signal. No widgets run on workers.
+- FormatChoice accepts any positive integer height so 540p and other extracted
+  heights can be selected. CLI presets and pure option-building API are unchanged.
+- QueueManager defaults to real workers, concurrency 2, configurable 1–4.
+  Lowering the limit lets active work finish before starting more. Retry creates
+  a new worker/Event; active rows cannot be retried/removed until thread teardown.
+- SettingsStore uses QSettings("MediaGrab", "MediaGrab") (Windows user registry).
+  It stores defaults only, never cookie material or queue contents, and validates
+  persisted values. Dialog applies saved defaults/theme immediately; existing
+  queued DownloadRequest snapshots remain unchanged. Queue persistence is omitted.
+- Dark/light QSS is packaged. Form rows hide inactive quality controls; percentage
+  bars are centered/wider, and Download/Add to queue are the two queue buttons.
+- Rotating diagnostics and typed error UX moved into Phase 4 by explicit request.
+  Logs: LOCALAPPDATA/MediaGrab/logs/mediagrab.log, 2 MiB plus four backups.
+  Application logging does not propagate to console; formatter redacts messages
+  and complete traceback frames using core helpers. No source lines/locals/secrets.
+- Close stops scheduling, sets all Events, keeps the event loop alive, and reaps
+  threads only after wait(0) succeeds. It waits for upstream FFmpeg to return,
+  preserving process ownership; cancellation does not force immediate shutdown.
+- Production workers contain no simulation; legacy fixtures live under tests.
 - Phase 5 environment/JS checks, updater and first-run disclaimer remain deferred.
   Packaging/release is Phase 6; final documentation/roadmap is Phase 7.
 - Default tests are offline. Verify unsure APIs against installed packages.

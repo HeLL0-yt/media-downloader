@@ -8,46 +8,45 @@ DECISIONS/NOTES contracts; no separate PROJECT SPEC section was supplied.
 
 ## Completed phases
 
-- **Phase 0 â€” done:** src packaging, dependency bounds, Windows CI and offline tests.
-- **Phase 1 â€” done:** immutable models, typed errors, URL/destination validation,
+- **Phase 0 — done:** src packaging, dependency bounds, Windows CI and offline tests.
+- **Phase 1 — done:** immutable models, typed errors, URL/destination validation,
   FFmpeg discovery/version checks and pure yt-dlp options.
-- **Phase 2 â€” done:** metadata extraction, downloads, cancellation with
+- **Phase 2 — done:** metadata extraction, downloads, cancellation with
   threading.Event, error mapping, H.264/AAC compatibility conversion, optional
   MP3 artwork, manual CLI, curl-cffi impersonation support, offline capability
   checks and quiet CLI tracebacks unless --verbose.
 
-## Phase 3 acceptance gate
+## Completed desktop phases
 
-**Done â€” 2026-10-04.** Offline UI/worker gate passed; see NOTES.md for commands
-and evidence. The current request authorizes Phase 4.
+- **Phase 3 — done, 2026-10-04:** desktop layout, signal-only simulated workers,
+  bounded queue, progress/actions, dark theme, clipboard/drop and safe shutdown.
+  Original acceptance/evidence is preserved in HISTORY.md.
+- **Phase 4 — implemented, 2026-10-04:** real get_info/download adapters, metadata
+  and separate optional thumbnail fetch, all reported video heights, real queue
+  defaulting to 2 with settings range 1–4, progress/speed/ETA and row actions.
+  QSettings-backed dialog persists folder, mode/quality/bitrate, parallelism,
+  compatibility, artwork, opt-in cookies and dark/light theme. Typed errors and
+  rotating redacted logs were explicitly brought into this phase by the user.
 
-Build desktop/app.py, main_window.py, widgets.py, workers.py, queue_manager.py,
-settings.py and resources. Use fake analysis/download workers only, with no media
-requests or writes. Clearly identify simulated metadata and progress in the UI.
+Phase 4 UI acceptance: one aligned field grid, conditional video/audio quality
+rows, wide progress bars with centered percentages, Download and Add to queue
+buttons, and more vertical room for the queue. Core remains independent of Qt.
+Download adds and starts; Add to queue stages or joins an already running queue.
+Workers communicate through immutable signal payloads. Close cancels and retains
+all workers until native thread completion; no forced termination or abandonment
+of upstream FFmpeg operations. Cancellation remains cooperative.
 
-- URL input, paste, Analyze, URL drag/drop and Ctrl+V.
-- Metadata card with thumbnail, title, uploader and duration.
-- Video/MP3 selection, video quality, audio bitrate, output folder picker,
-  Add to queue and Download.
-- Queue columns: Title, Mode, Quality, Status, delegated progress bar, Speed,
-  ETA and Actions; cancel, retry, open folder and remove through buttons/menu.
-- Status bar reads yt-dlp and FFmpeg versions through core off the GUI thread.
-- Dark QSS, Qt high-DPI support and tr() for user-facing strings.
-- Background workers communicate exclusively through Signals. Fake downloads
-  emit the core ProgressEvent including finished/error/cancelled states.
-- Queue parallel limit, cancel/retry and clean cooperative shutdown, retaining
-  ownership until every worker has exited; never terminate a Qt thread.
-- pytest-qt offscreen tests for creation, scheduling, signals and shutdown.
-  Preserve core coverage configuration and pass Ruff lint/format and pytest.
-- Provide python -m mediagrab.desktop.app. Make small conventional local commits,
-  update DECISIONS/NOTES and stop for the user's continue at this gate.
+Phase 4 automated gate: Ruff lint/format and sequential pytest-qt offscreen with
+mocked core calls, coverage and --basetemp=.pytest_tmp. Default tests make no media
+network requests. Manual user gate: 1080p MP4 and MP3 on YouTube/TikTok/Instagram,
+cancel mid-download, invalid URL, offline failure and close during download.
+Implementation is complete; live platform checks remain pending. Stop here for
+user continue; do not start Phase 5.
 
-## Remaining roadmap (not Phase 3 work)
+## Remaining roadmap (not Phase 4 work)
 
-4. Real analysis/download adapters, settings dialog and QSettings; folder,
-   mode/quality, parallelism 1â€“4, compatibility, artwork, browser cookies, theme.
-5. Full environment/JS/impersonation checks, updater, first-run disclaimer,
-   rotating local logs and polished error UX.
+5. Full environment/JS/impersonation checks, updater and first-run disclaimer.
+   Rotating logs and typed-error presentation are already implemented in Phase 4.
 6. PyInstaller onedir/noconsole, verified binary fetch/build scripts, clean-path
    validation and Windows release workflow; never commit executable binaries.
 7. Final README, badges/screenshots/architecture/usage/build/troubleshooting,
@@ -62,7 +61,8 @@ Browser-cookie access remains opt-in. No DRM circumvention.
 get_info returns VideoInfo; download returns the actual final Path and calls
 on_progress with immutable ProgressEvent on its calling worker thread.
 threading.Event cancellation is cooperative. Processing is distinct from success.
-Unknown metadata remains unknown. See DECISIONS.md for detailed path, playlist,
+FormatChoice accepts any positive integer video height ceiling so desktop choices
+can match real metadata; CLI retains preset choices. Unknown metadata remains unknown. See DECISIONS.md for detailed path, playlist,
 compatibility, logging and cancellation constraints; NOTES.md records evidence.
 
 ## Phase-gate checklist

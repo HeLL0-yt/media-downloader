@@ -7,7 +7,7 @@ contracts in SPEC, DECISIONS and NOTES supersede historical pending statements.
 
 # Design decisions
 
-## Phase 3 â€” 2026-10-04
+## Phase 3 — 2026-10-04
 
 The current request authorizes Phase 3 in the existing local checkout. This entry
 supersedes the historical handoff's pending-phase wording. Phase 4 is not started.
@@ -23,7 +23,7 @@ tests, without assigning special behavior to user URLs.
 
 Each worker owns a QThread and threading.Event; only immutable result/progress
 payloads cross to GUI-owned Slots through Signals. QueueManager accepts a worker
-factory, bounds concurrency to 1â€“4 (default 2), and owns workers until native
+factory, bounds concurrency to 1–4 (default 2), and owns workers until native
 thread teardown completes. The current user request brings fake queue scheduling,
 cancel/retry tests and actions into Phase 3; real engine adapters remain Phase 4.
 Add to queue stages work until Start queue or Download starts the scheduler;
@@ -53,7 +53,7 @@ DesktopSettings holds in-memory destination/concurrency defaults only. QSettings
 settings dialogs, real thumbnails/downloads and all other Phase 4+ work remain
 outside this gate. No dependencies or core source files were changed.
 
-## Session handoff â€” 2026-10-04
+## Session handoff — 2026-10-04
 
 ### Scope and stop-gates
 
@@ -138,7 +138,7 @@ updates, rotating file logging, and first-run consent remain unimplemented.
 | Phase | Required work and acceptance gate |
 | --- | --- |
 | 3 | Desktop layout with **fake workers only**: URL/paste/Analyze, metadata card and async thumbnail, Video/MP3 controls, quality/bitrate choices, folder picker, Add to queue/Download, queue table with progress/speed/ETA/actions and context menu, URL drag/drop and Ctrl+V, dark QSS/high-DPI support, `tr()` strings. Establish Signals-only worker communication and safe shutdown. Add offscreen main-window/fake-worker smoke tests. Do not connect real downloads in this phase. |
-| 4 | Connect real analysis/download workers; queue limit defaults to 2 and is configurable 1â€“4; progress, cancel/retry/open-folder/remove actions. Add QSettings and settings dialog for folder, mode/quality, parallelism, compatibility, artwork, browser cookies, and dark/light theme. Queue persistence is not required. Test queue scheduling, cancellation, retry, and window creation. |
+| 4 | Connect real analysis/download workers; queue limit defaults to 2 and is configurable 1–4; progress, cancel/retry/open-folder/remove actions. Add QSettings and settings dialog for folder, mode/quality, parallelism, compatibility, artwork, browser cookies, and dark/light theme. Queue persistence is not required. Test queue scheduling, cancellation, retry, and window creation. |
 | 5 | Complete startup environment checks for engine/FFmpeg/JS runtime using then-current verified docs; show friendly warnings asynchronously. Add urllib update checks with timeouts/offline handling and development `python -m pip install -U yt-dlp`; document a safe frozen-mode update strategy before implementing it. Add first-run disclaimer, rotating `%LOCALAPPDATA%/MediaGrab/logs` logging, and polished typed-error UX. |
 | 6 | PyInstaller onedir/noconsole spec, Windows build script, verified FFmpeg/ffprobe fetch/bundle script, dependency/license notices, and frozen app verification from a clean path. Add tag-triggered artifact/Release workflow; optional Inno Setup. FFmpeg's website links third-party Windows builds: do not describe those as binaries built by FFmpeg itself. |
 | 7 | Final README badges, screenshot placeholders, Mermaid architecture, usage/build/troubleshooting, CONTRIBUTING, updated decisions, and roadmap for macOS/Telegram bot/web. Do not claim roadmap features are implemented. |
@@ -150,7 +150,7 @@ document that it uses the user's authenticated session and can expose private
 account content. All network/download work, including update checks and analysis,
 must stay off the GUI thread.
 
-## Phase 0 â€” 2026-10-04
+## Phase 0 — 2026-10-04
 
 ### Use the existing repository root
 
@@ -206,7 +206,7 @@ The skeleton contains package initializers and resource/script directories.
 Downloader, GUI entry points, and build scripts will be added when implemented;
 there are no placeholder public functions or nonfunctional launch commands.
 
-## Phase 1 â€” 2026-10-04
+## Phase 1 — 2026-10-04
 
 ### Immutable core data and explicit quality values
 
@@ -303,7 +303,7 @@ minimum. Real yt-dlp construction, format sorting, and filename preparation are
 tested without downloading media, in addition to unit tests for validation,
 settings, executable discovery, process safety, and option combinations.
 
-## Phase 2 â€” 2026-10-04
+## Phase 2 — 2026-10-04
 
 ### Analyze metadata without enumerating playlists
 
@@ -428,7 +428,7 @@ Tests and manual media stay outside Git. Gyan binaries used for local verificati
 are checksum-verified and ignored; a distributable fetch/bundle script remains
 Phase 6 work.
 
-## Phase 2 follow-up â€” 2026-10-04
+## Phase 2 follow-up — 2026-10-04
 
 ### Declare impersonation support and inspect actual targets
 
@@ -458,7 +458,7 @@ Logging configuration is restored at the end of each CLI invocation.
 
 # Verified upstream notes
 
-## Phase 3 gate â€” complete, 2026-10-04
+## Phase 3 gate — complete, 2026-10-04
 
 The desktop prototype is implemented in the current local checkout. Phase 4 has
 not started. The historical handoff below describes the previous gate and is
@@ -482,7 +482,7 @@ sets State_Horizontal. Context menus use asynchronous popup().
 
 The installed pytest-qt teardown implementation closes and deletes registered
 widgets before ordinary fixture cleanup; tests use before_close_func to finish
-asynchronous worker shutdown before widget deletion. Tests cover limits 1â€“4,
+asynchronous worker shutdown before widget deletion. Tests cover limits 1–4,
 FIFO scheduling, pending/active cancellation, fresh-worker retry after injected
 failure, signal affinity, GUI timer responsiveness, action buttons/context menu,
 engine-version success/failure, stale metadata, clipboard/drop, entry-point
@@ -533,10 +533,10 @@ queue stages a request; Download adds the selection and starts scheduling;
 Start queue starts already staged rows. Cancel/retry/remove operate on simulated
 tasks. Open folder opens the requested destination and does not create it.
 
-## Resume here â€” 2026-10-04
+## Resume here — 2026-10-04
 
 Read `AGENTS.md`, `docs/DECISIONS.md`, this section, and `README.md` before changing
-code. Phases **0â€“2 are complete**; **Phase 3 is pending and requires `continue`**.
+code. Phases **0–2 are complete**; **Phase 3 is pending and requires `continue`**.
 The curl-cffi/core environment/CLI follow-up is complete. This handoff adds no GUI
 code. Historical phase evidence below records what was verified at each gate,
 rather than a list of outstanding implementation work.
@@ -694,7 +694,7 @@ must not depend on ignored files being available on another machine.
 4. Run the checks above, record new evidence, commit the phase, and stop. Do not
    present future UI, updater, packaging, or roadmap work as completed.
 
-## Phase 0 â€” 2026-10-04
+## Phase 0 — 2026-10-04
 
 Dependency metadata was checked against PyPI and the local Python 3.14 environment.
 
@@ -767,7 +767,7 @@ Validation used Windows, CPython 3.14.0, and the repository-local `.venv`:
 The GitHub-hosted CI run has not been executed locally. Core behavior and GUI
 smoke tests will be added in their assigned phases.
 
-## Phase 1 â€” 2026-10-04
+## Phase 1 — 2026-10-04
 
 Options were checked against the installed yt-dlp 2026.08.19 distribution before
 implementation. The primary references are:
@@ -824,7 +824,7 @@ Windows CPython 3.14.0, yt-dlp 2026.08.19, PySide6/Qt 6.11.2:
 The 80% coverage threshold is now enforced by Windows CI. The GitHub-hosted job
 itself has not been run as part of this local phase.
 
-## Phase 2 â€” 2026-10-04
+## Phase 2 — 2026-10-04
 
 ### Verified engine behavior
 
@@ -863,7 +863,7 @@ The integration test uses the **3,889,885-byte** Big Buck Bunny trailer hosted a
 Peach project content as Creative Commons Attribution 3.0 and specifies attribution.
 For the trailer and its extracted soundtrack:
 
-**Â© copyright 2008, Blender Foundation / www.bigbuckbunny.org.**
+**© copyright 2008, Blender Foundation / www.bigbuckbunny.org.**
 
 The test extracts the soundtrack from this trailer, not the separately released
 score. It downloads into pytest's temporary directory and commits no media.
@@ -920,7 +920,7 @@ The sandbox denies pytest's default system temp directory. Local test runs use
 can use the default directory. All binaries, media, temporary test data, and
 coverage outputs are ignored. The GitHub-hosted workflow has not been run locally.
 
-## Phase 2 follow-up: impersonation dependency and CLI diagnostics â€” 2026-10-04
+## Phase 2 follow-up: impersonation dependency and CLI diagnostics — 2026-10-04
 
 The installed yt-dlp **2026.08.19** distribution metadata was checked directly.
 It declares `Provides-Extra: curl-cffi` and this requirement:
