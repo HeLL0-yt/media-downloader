@@ -2,10 +2,12 @@
 
 ## Current status and contracts
 
-Phases 0–5 are implemented. Phase 4 manual Windows gate passed,
+Phases 0–6 are implemented. Phase 4 manual Windows gate passed,
 verified by the user on 2026-10-04, not by automated tests.
-Phase 5's offline automated gate is passed; manual verification instructions are
-in NOTES.md. Phase 6 has not started.
+Phase 5's offline automated gate passed. The user verified first-run disclaimer,
+About, Environment, diagnostics, logs and normal MP4/MP3 downloads on Windows;
+live updater and missing-tool simulation were not run. Phase 6 frozen verification
+and release prerequisites are recorded in NOTES.md. Phase 7 has not started.
 Work in the existing local checkout; no cloud, worktree, new repository or push.
 
 - Python 3.14, Windows 10/11, PySide6, yt-dlp, native FFmpeg/ffprobe.
@@ -57,8 +59,8 @@ Work in the existing local checkout; no cloud, worktree, new repository or push.
   threads only after wait(0) succeeds. It waits for upstream FFmpeg to return,
   preserving process ownership; cancellation does not force immediate shutdown.
 - Production workers contain no simulation; legacy fixtures live under tests.
-- Phase 5 environment/updater/disclaimer/diagnostics are implemented.
-  Packaging/release remains Phase 6; final documentation/roadmap remains Phase 7.
+- Phase 5 environment/updater/disclaimer/diagnostics and Phase 6 packaging/release
+  infrastructure are implemented. Final documentation/roadmap remains Phase 7.
 - Default tests are offline. Verify unsure APIs against installed packages.
   Run pytest and app sequentially; pytest uses --basetemp=.pytest_tmp.
 - Before every final phase commit update README, SPEC, DECISIONS and NOTES,
@@ -77,8 +79,9 @@ Work in the existing local checkout; no cloud, worktree, new repository or push.
   timeout. MediaGrab's offline probes use core/process with five-second timeouts
   and the installed class minimums: Deno 2.3.0, Node 22, Bun 1.2.11, QuickJS
   2023-12-09; QuickJS-ng accepts a positive version. QuickJS --help exit 1 is normal.
-- Runtime discovery checks Python scripts, the executable directory when frozen,
-  and absolute PATH folders, excludes implicit cwd and shell wrappers, and passes
+- Runtime discovery checks Python scripts in source mode; frozen mode prefers the
+  executable directory then _MEIPASS. It searches absolute PATH folders, excludes
+  implicit cwd and shell wrappers, and passes
   found executable paths explicitly for both analysis and download. This is a
   deliberate narrower search than upstream Windows cwd/PATHEXT discovery.
   Pure build_options remains free of discovery I/O. Remote EJS fetching is off.
@@ -123,8 +126,71 @@ next startup, validate the manifest and load the selected package ahead of the
 bundled copy before any yt-dlp import. Keep the last working engine and bundled
 fallback; rollback on import/API failures. A user-writable directory is not a
 trust boundary against a hostile local account, so verify integrity on every
-load. Frozen builds currently refuse updates; packaging compatibility, staging,
-loader and rollback tests belong to the later packaging work.
+load. Frozen builds refuse updates; staging, loader and rollback remain future
+work, explicitly excluded from Phase 6. Packaged users update MediaGrab itself.
+
+## Phase 6 packaging decisions
+
+- pyproject.toml is the app version source. mediagrab.__version__ reads installed
+  metadata. Build checks installed metadata against pyproject and generates PE
+  version info; spec copies distribution metadata, including engine/EJS/curl/Qt.
+  A missing package installation is an error, not an invented fallback version.
+- Prefer onedir/windowed with _internal and no UPX. Package resources and Qt native
+  libraries remain replaceable; entire directory must travel with the executable.
+  Standard Windows Qt hooks remain active. Explicit platform/style/imageformat
+  collection and QtSvg protect runtime plugin discovery. Do not collect all Qt
+  modules just to satisfy a widget app. Plugin dependencies pull in extra Qt DLLs.
+- Collect yt-dlp submodules and EJS data; installed namespace plugins are copied
+  as Python files because the engine's PluginFinder scans the filesystem. The
+  default build has no third-party extractor plugins. Native curl-cffi plus its
+  wheel's dependent DLLs and certifi are collected; capability is tested through
+  actual yt-dlp target enumeration, not package presence. Exclude build hooks and
+  curl's __main__ entry point from runtime hidden imports.
+- resources.resource_path resolves source package paths or _MEIPASS/mediagrab
+  and rejects paths containing subdirectories/traversal. Existing About/disclaimer
+  text lives in Python code and is checked through the actual frozen dialogs.
+  The download-arrow ICO is generated deterministically with standard-library
+  code and committed as an app asset; executable/vendor binaries stay ignored.
+- FFmpeg itself provides source, not official Windows binaries. Select its linked
+  Gyan essentials supplier, pinned 9.0.2 GPLv3, because compatibility conversion
+  requires libx264, which LGPL builds exclude. Keep licence text, supplier README,
+  configuration, source revision and component references. A source link alone is
+  insufficient for this static GPL bundle. Publication fails closed until reviewed
+  complete corresponding source (including linked libraries/build scripts and other
+  distributed GPL/LGPL sources) is supplied via repository URL/SHA-256 variables.
+  This source archive is uploaded beside the Windows zip; no release was created.
+- Bundle official Deno 2.9.7 x64, MIT, rather than requiring a first-use install.
+  Actual added executable size: 97,462,048 bytes; upstream zip: 42,630,221 bytes.
+  Offline self-check evaluates both real EJS bundles with --no-remote/--no-npm.
+  No remote EJS component is enabled and no YouTube access guarantee is claimed.
+- Both fetch scripts call a typed Python helper for HTTPS downloads. Compare
+  published SHA-256 with committed tool pin and hash archive before checked-path
+  extraction. Cached archives are rehashed; binaries are copied fresh from verified
+  archives on every build, never trusted from an unverified cached executable.
+- Discovery beside sys.executable wins; frozen JS checks _MEIPASS second and ignores
+  source Python scripts. Frozen update button remains disabled and direct invocation
+  refuses pip with clear 'Update MediaGrab to get a newer engine' guidance.
+- --self-check is Qt-free until explicit --smoke-test. JSON uses logging, never
+  print; --report is dependable for noconsole. When stdout is redirected, duplicate
+  its Windows handle to recover the stream cleared by the windowed bootloader.
+  Report includes local paths for local verification, unlike shareable diagnostics.
+  Self-check restores logger state and returns failure status.
+- Isolate native analysis inside mediagrab.spec: launch wrappers can restore PATH.
+  This host exposed a real collision: PyInstaller resolved Poppler icuuc.dll instead
+  of Windows' unsuffixed C API. Spec searches Windows/Python/package native inputs
+  and rejects foreign roots. It does not redistribute an OS DLL or patch Qt.
+- The frozen check's minimal PATH retains _internal and _internal/PySide6, required
+  by Qt image plugins, plus Windows/System32 and Windows. Python/system media/JS
+  installations are excluded. Initial clearing of Qt's package PATH exposed SVG
+  plugin loading failure; preserving those internal paths resolves that contract.
+- Clean-temp smoke exercises native Windows platform (clearing offscreen), bundled
+  discovery, real environment worker, themes, image formats, About/disclaimer and
+  retained-thread shutdown. Temporary INI settings avoid mutating acceptance/defaults.
+  Unique temp deletion is resolved and bounded to the temp root before removal.
+- Release build job has read-only contents permission; a separate release job has
+  contents: write. Official actions are resolved to commit hashes. Tag must match
+  metadata version. Tests complete before smoke/application execution. No push,
+  tag, release, cloud execution or worktree operation was performed.
 
 ## Historical records
 

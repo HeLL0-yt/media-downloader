@@ -4,13 +4,14 @@ MediaGrab is a Python 3.14 desktop application being built for Windows 10/11.
 Its download engine uses yt-dlp as a library, FFmpeg for media processing,
 and PySide6 for the interface.
 
-**Current status: Phases 0–5 implemented. Phase 4 Windows platform checks passed,
+**Current status: Phases 0–6 implemented. Phase 4 Windows platform checks passed,
 verified manually by the user on 2026-10-04, not by automated tests. Phase 5's
 offline automated gate passed. On 2026-10-04 the user manually verified the
 first-run disclaimer, About, Engine/Environment panel, diagnostics, logs and
 normal MP4/MP3 downloads on Windows. The live updater and missing-Deno/FFmpeg
 simulation were not run; the remaining manual instructions are in docs/NOTES.md.
-Phase 6 has not started.**
+Phase 6 adds a locally verified Windows onedir build and tagged release workflow.
+Phase 7 has not started.**
 
 ## Existing features
 
@@ -31,6 +32,10 @@ Phase 6 has not started.**
 - First-run responsible-use acceptance, persisted in QSettings; Help exposes
   About (versions, MIT license, repository) and the disclaimer again.
 - Clipboard/URL drag-drop input and cooperative shutdown that waits for workers.
+- Windows x64 portable onedir packaging with bundled FFmpeg/ffprobe and Deno,
+  package metadata, EJS data, native impersonation/TLS support and Qt plugins.
+- Non-GUI deployment self-check, clean-PATH GUI smoke script, zip/SHA-256 output
+  and a tag-triggered release workflow. Builds are unsigned.
 
 ## Desktop launch and usage
 
@@ -54,7 +59,8 @@ redacted diagnostics. The release check runs only when requested. Updates requir
 a virtual environment, explicit confirmation and no active downloads/analysis.
 Queued downloads pause during updating; restart after any install attempt before
 using the engine again. Check/repair the venv after a cancelled or failed pip run.
-System Python and frozen-build updates are refused in Phase 5.
+System Python and frozen-build updates are refused. In a packaged app, update
+MediaGrab to get a newer engine; no pip installation changes bundled files.
 
 The desktop now uses real core workers. Simulation exists only in test helpers.
 Progress is per transfer/stream; processing is distinct from success. On close,
@@ -78,7 +84,8 @@ The project uses a `src/` layout. Install it before running tests; changing
 `PYTHONPATH` is unnecessary. FFmpeg and a JavaScript runtime are external binaries,
 not Python packages. Get both FFmpeg executables from a Windows build linked on
 the [FFmpeg download page](https://ffmpeg.org/download.html), then add their shared
-folder to PATH. Automated bundling belongs to Phase 6. Install Deno (recommended) for YouTube:
+folder to PATH. Source launches use external tools; the Windows package bundles
+both FFmpeg executables and Deno. Install Deno (recommended) for source YouTube use:
 
 ```powershell
 winget install DenoLand.Deno
@@ -89,8 +96,145 @@ Restart the shell and app after PATH changes. The installed yt-dlp 2026.08.19
 supports Deno ≥2.3.0, Node ≥22, Bun ≥1.2.11 and QuickJS ≥2023-12-09 (or QuickJS-ng).
 MediaGrab enables discovered supported runtime names explicitly with executable
 paths in `js_runtimes`; it searches Python's scripts directory and absolute PATH
-folders. EJS comes from the engine's default extra; remote EJS fetching is disabled.
+folders in source mode. Frozen discovery prefers the executable folder, then
+`_internal`, then absolute PATH folders; it does not consult Python scripts.
+EJS comes from the engine's default extra; remote EJS fetching is disabled.
 The startup check applies version minimums from the installed engine.
+
+## Windows build and portable launch
+
+Build on Windows x64 using Python 3.14. Internet access is required for pinned
+upstream binaries and their published checksums. No Python, system FFmpeg or
+system Deno installation is required on the target machine. Windows 10/11 x64
+is the target; the local frozen verification was performed on Windows 11.
+
+```powershell
+.\.venv\Scripts\python.exe -m pip install --editable ".[dev,build]"
+.\scripts\build_windows.ps1
+# With another installed Python 3.14 environment:
+# .\scripts\build_windows.ps1 -Python python
+```
+
+The committed `mediagrab.spec` builds **MediaGrab**, onedir/windowed, with no UPX.
+The version comes from `pyproject.toml` through installed distribution metadata;
+the build refuses stale metadata. Full QSS/icon resources and metadata are copied.
+Runtime collection includes yt-dlp extractors/plugin support, EJS scripts/data,
+curl-cffi native libraries, certifi's CA bundle and Qt platforms/styles/imageformats.
+Installed namespace plugins are collected as real files for yt-dlp's finder;
+the default environment has no third-party extractor plugins.
+
+Downloads are pinned in `scripts/tools.json`: FFmpeg 9.0.2 Gyan essentials x64
+(GPLv3, required for existing libx264 compatibility conversion), and official
+Deno 2.9.7 x64 (MIT). The scripts compare the downloaded published checksum with
+the committed digest, verify the archive, then extract into ignored
+`vendor/packaging/`. Binaries are never committed. Deno adds 97,462,048 bytes
+uncompressed (42,630,221-byte upstream zip). FFmpeg and ffprobe add 210,644,992
+bytes uncompressed. Bundling Deno avoids a separate YouTube runtime install.
+FFmpeg itself publishes source; Gyan's Windows supplier is linked from the
+[official FFmpeg download page](https://ffmpeg.org/download.html).
+
+The build runs self-check and GUI smoke before creating:
+
+```text
+dist/MediaGrab/MediaGrab.exe
+dist/MediaGrab/ffmpeg.exe
+dist/MediaGrab/ffprobe.exe
+dist/MediaGrab/deno.exe
+dist/MediaGrab/_internal/...
+dist/MediaGrab-0.1.0-windows-x64.zip
+dist/MediaGrab-0.1.0-windows-x64.zip.sha256
+```
+
+Extract the **entire zip** into an ordinary writable folder. Keep `_internal`,
+the three tool executables, LICENSE and THIRD_PARTY_NOTICES.md with MediaGrab.exe.
+Do not move only the executable. Launch:
+
+```powershell
+.\dist\MediaGrab\MediaGrab.exe
+```
+
+For an offline check without creating a GUI or changing disclaimer acceptance:
+
+```powershell
+$appExe = (Resolve-Path .\dist\MediaGrab\MediaGrab.exe).Path
+$reportPath = Join-Path $PWD 'build\self-check.json'
+$check = Start-Process -FilePath $appExe -ArgumentList @('--self-check', '--report', "`"$reportPath`"") -PassThru -Wait
+$check.ExitCode # 0 means all required capabilities passed; 1 means failure
+Get-Content -LiteralPath $reportPath
+```
+
+The report includes versions, local paths, extractor count, native impersonation
+targets, certificate/EJS resources and offline EJS evaluation by bundled Deno.
+Self-check requires bundled FFmpeg, ffprobe and Deno beside the exe. It explicitly
+uses a minimal PATH internally; missing optional Node/Bun/QuickJS is acceptable.
+Windowed builds have no normal console; use `--report` for dependable output.
+Redirected stdout is also recovered and receives the JSON through logging.
+Reports contain local paths and are intended for local inspection.
+
+Repeat both deployment checks from a clean temporary copy:
+
+```powershell
+.\scripts\smoke_frozen.ps1
+# Or check a separately extracted distribution:
+.\scripts\smoke_frozen.ps1 -AppDirectory 'C:\Temp\MediaGrab-clean'
+```
+
+The script copies the complete folder to a unique temp directory, starts from an
+unrelated working directory, removes inherited offscreen Qt selection, uses a
+minimal PATH (Windows/System32 and Windows), and waits for clean process exit.
+`--smoke-test` shows the real main window, Environment, disclaimer and About,
+checks image plugins and both themes, awaits the real offline environment worker,
+then closes cooperatively. Smoke uses temporary INI settings and never accepts
+the responsible-use disclaimer on the user's behalf. It performs no live download.
+
+### Tagged release workflow
+
+The existing CI is retained. `.github/workflows/release.yml` runs only on `v*`
+tags and requires the tag to equal the project version (currently `v0.1.0`). It
+uses Windows/Python 3.14, installs, checks dependencies, runs lint/format and
+sequential offline coverage, builds, smokes and creates a zip/SHA-256 pair.
+Actions are pinned to verified commit hashes. Only the separate release job gets
+`contents: write`; it uploads the verified artifacts using GitHub CLI.
+
+Before publishing this GPL static FFmpeg bundle, the distributor must prepare a
+reviewed **complete corresponding-source zip** for this exact FFmpeg build,
+including linked dependency sources and build scripts, and source for the
+distributed GPL/LGPL components. The workflow requires repository variables
+`MEDIAGRAB_CORRESPONDING_SOURCE_URL` (HTTPS) and
+`MEDIAGRAB_CORRESPONDING_SOURCE_SHA256`; it verifies and publishes that archive
+and its checksum alongside the app. Without these variables the workflow fails
+before publication. A link to FFmpeg alone is insufficient. Full GPLv3, Deno MIT
+and Qt LGPLv3 text is in THIRD_PARTY_NOTICES.md; wheel notices, Python licence and
+tool provenance are under `_internal/licenses`. No tag or release was created
+during local Phase 6 work.
+
+### Phase 6 manual checklist
+
+1. Run the build command above; confirm both smoke modes pass and a zip/hash exist.
+2. Extract the entire zip into a fresh folder with spaces in its path, outside
+   the repository. Run MediaGrab.exe from there and from a different working folder.
+3. Verify first-run responsible-use handling, About/version, both themes and icons.
+   Existing accepted QSettings remain shared with source launches.
+4. Open Settings > Engine/Environment: FFmpeg 9.0.2, ffprobe 9.0.2 and Deno 2.9.7
+   must point beside the copied exe; EJS and impersonation targets must be present.
+   Confirm the updater says to update MediaGrab for a newer engine.
+5. Run `smoke_frozen.ps1 -AppDirectory <extracted-folder>` for the clean temp copy
+   and automated minimal-PATH check. For an interactive check, use a throwaway shell:
+
+   ```powershell
+   $cleanExe = 'C:\Temp\MediaGrab-clean\MediaGrab.exe'
+   $savedPath = $env:PATH
+   try {
+       $env:PATH = "$env:SystemRoot\System32;$env:SystemRoot"
+       Start-Process -FilePath $cleanExe -Wait
+   } finally { $env:PATH = $savedPath }
+   ```
+
+6. Verify diagnostics, logs and normal close. Optional permitted live check:
+   paste `https://download.blender.org/peach/trailer/trailer_iphone.m4v`, select
+   Best, download MP4 and MP3, and inspect playback. This live frozen download is
+   optional and was not part of the offline gate.
+7. Verify the zip's SHA-256 before using or distributing it, as described below.
 
 ## Manual downloads
 
@@ -186,6 +330,36 @@ highest VBR quality setting, rather than a guaranteed 320 kbps stream.
 
 ## Troubleshooting
 
+### Unsigned builds, SmartScreen and antivirus
+
+These builds are unsigned. SmartScreen can report an unknown publisher or lack
+of reputation; antivirus heuristics can flag packaged Python applications.
+Such warnings alone do not establish a false positive. Download only the expected
+release, retain protection, and compare SHA-256 against its published checksum:
+
+```powershell
+$zip = '.\MediaGrab-0.1.0-windows-x64.zip'
+$expected = (Get-Content "$zip.sha256" -Raw).Split()[0]
+$actual = (Get-FileHash -LiteralPath $zip -Algorithm SHA256).Hash
+if ($actual -ine $expected) { throw 'SHA-256 mismatch; do not run this archive.' }
+```
+
+A matching hash checks integrity against the selected checksum; it is not a
+publisher signature or a malware guarantee. For a suspected false positive,
+verify the source/release provenance and submit the file to the antivirus vendor
+for review; do not disable antivirus globally.
+
+### Packaged startup or missing resources
+
+Re-extract the complete zip; `_internal` and bundled tool executables are required.
+Use the self-check report and smoke script above. Source launches still need an
+installed package and external tools. Build scripts isolate PATH to avoid native
+DLLs from unrelated software. If Qt reports a missing DLL procedure, inspect
+`build/mediagrab/Analysis-00.toc` and confirm no unrelated ICU/Qt DLL was collected.
+The spec rejects native inputs outside Python/packages/Windows. Use the selected
+64-bit Python 3.14 environment and rerun the build rather than copying DLLs from
+another application. Windows 10 has not been separately tested in this phase.
+
 ### TikTok/Instagram failures or no impersonation target
 
 Browser impersonation lets yt-dlp use browser-compatible TLS/HTTP request
@@ -255,7 +429,8 @@ Pip installation is not transactional. After failure/cancellation run the same
 venv's `python -m pip check`; repair using `python -m pip install --editable .`
 if required, then restart. Test installation/cancellation in a disposable venv,
 not the development venv: see [Phase 5 manual checklist](docs/NOTES.md#phase-5-manual-verification-checklist).
-Frozen updating is designed in DECISIONS.md and deliberately unimplemented.
+Frozen updating remains refused: update MediaGrab to get a newer engine.
+The future engine-directory design in DECISIONS.md remains unimplemented.
 
 ## Project structure
 
@@ -266,13 +441,15 @@ Frozen updating is designed in DECISIONS.md and deliberately unimplemented.
 │   ├── core/                 # Downloader, CLI, validation, conversion; no GUI imports
 │   └── desktop/              # Interface, real workers, queue, settings, log setup, themes
 ├── tests/
-├── scripts/                  # Windows build scripts, added in Phase 6
+├── scripts/                  # Verified tool downloads, build and frozen smoke
+├── mediagrab.spec             # PyInstaller onedir/windowed specification
+├── THIRD_PARTY_NOTICES.md     # Shipped licence text and source references
 ├── docs/
 │   ├── DECISIONS.md
 │   ├── NOTES.md
 │   ├── SPEC.md
 │   └── HISTORY.md
-└── .github/workflows/ci.yml
+└── .github/workflows/         # Existing CI and tag-triggered Windows release
 ```
 
 Core progress uses a dataclass callback and cancellation uses `threading.Event`.
@@ -290,7 +467,7 @@ Qt signals. Windows-specific integration will be isolated from the core.
 | 3 | Desktop layout and fake worker | Implemented |
 | 4 | Real workers, queue, progress, settings, local logs and typed errors | Implemented; user manual gate passed |
 | 5 | Environment checks, confirmed venv updater, disclaimer/About, diagnostics and error UX | Implemented; automated gate passed; Windows UI, diagnostics, logs and normal downloads user-verified; live updater and missing-tool simulation not run |
-| 6 | Windows packaging and tagged release workflow | Pending |
+| 6 | Windows packaging and tagged release workflow | Implemented; local automated/frozen gate verified; release requires corresponding-source archive |
 | 7 | Full documentation, screenshots, contribution guide, roadmap | Pending |
 
 Each phase ends with README/SPEC/DECISIONS/NOTES updates, lint/test results and a commit. The next phase requires an
@@ -318,5 +495,6 @@ platform. The authors don't encourage downloading content you have no rights to.
 ## License
 
 MediaGrab source code is licensed under [MIT](LICENSE). Bundled dependencies and
-external tools retain their own licenses; distribution notices will be addressed
-in the Windows packaging phase.
+external tools retain their own licenses; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)
+and the shipped `_internal/licenses` directory. Redistribution of the GPL build
+requires its complete corresponding source as described in the release instructions.

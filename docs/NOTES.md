@@ -2,12 +2,13 @@
 
 ## Current status and contracts
 
-Phases 0–5 are implemented; Phase 4 manual Windows gate passed,
+Phases 0–6 are implemented; Phase 4 manual Windows gate passed,
 verified by the user on 2026-10-04, not by automated tests.
 Phase 5 automated checks pass. On 2026-10-04 the user manually verified the
 first-run disclaimer, About, Engine/Environment panel, diagnostics, logs and
 normal MP4/MP3 downloads on Windows. The live updater and missing-Deno/FFmpeg
-simulation were not run. Phase 6 has not started.
+simulation were not run. Phase 6 packaging evidence is recorded below;
+Phase 7 has not started.
 Core is Qt independent. Current contracts are in SPEC.md and DECISIONS.md.
 
 ## Phase 4 evidence — 2026-10-04
@@ -187,4 +188,58 @@ include the verified Deno directory instead. Check the panel for Node/Bun/QuickJ
 if another supported runtime is present, the overall YouTube JS check remains OK.
 Close the app and shell; subsequent normal launches use the normal PATH.
 
-Stop at Phase 5. Phase 6 requires the user's continue.
+## Phase 6 evidence — 2026-10-04
+
+- Work remains in C:\Projects\media-downloader. No cloud, worktree, push, tag or
+  release. Housekeeping commit f63337c records exactly the user's Phase 5 report.
+- Read AGENTS, SPEC, DECISIONS, NOTES, pyproject and core/desktop before coding;
+  provided the requested 10-line summary and short packaging plan first.
+- Installed PyInstaller 6.22.3, hooks-contrib 2026.8, yt-dlp 2026.08.19, EJS 0.8.0,
+  curl-cffi 0.16.3, certifi 2026.7.22, PySide6/Qt 6.11.2 source inspected. Verified
+  Qt collection/runtime hooks, yt-dlp hooks/plugin finder, EJS importlib.resources
+  loader and Deno runner. Official PyInstaller/Qt/FFmpeg/Deno/Microsoft docs checked.
+- Verified upstream FFmpeg 9.0.2 published SHA-256:
+  60f467265b1e312373dbcd92200c2618a74850f98d3d078e94296bb3fa2047ba.
+  FFmpeg executable 105,423,872 bytes; ffprobe 105,221,120 bytes. Supplier licence
+  is GPLv3; configuration includes libx264 and excludes nonfree. Supplier README,
+  source revision/configuration, licence and provenance are shipped.
+- Verified official Deno 2.9.7 archive published SHA-256:
+  a0c3101b4158d1dfb7d6a78a7bf0f3de80c96bb423c152beec8beb22786f2238.
+  Archive 42,630,221 bytes; executable 97,462,048 bytes. Full MIT notice is shipped.
+- Early frozen GUI launch failed at QtCore import. PE imports/export comparison
+  traced this to Poppler ICU collected from developer PATH. Source Qt actually
+  loads Windows/System32/icuuc.dll. PATH isolation inside the spec and rejection
+  of foreign native roots address this; setting PATH only in PowerShell did not
+  suffice under the local launch wrapper. Qt image plugins also require the bundle's
+  own _internal/PySide6 PATH entry. Final build/smoke evidence follows.
+- Resource/discovery tests monkeypatch sys.frozen/_MEIPASS. Coverage threshold and
+  coverage configuration are unchanged. Default tests remain offline and run
+  sequentially; the app/smoke never runs during pytest.
+- Final Ruff lint and format check passed (67 Python files). Sequential offline
+  pytest --basetemp=.pytest_tmp: **619 passed, 1 skipped**, 12.01 seconds. Branch
+  coverage: **core 98.87%, desktop 89.47%, combined 93.93%**; unchanged 80% gate.
+  Deployment-only GUI smoke is exercised by the frozen executable outside pytest,
+  so its statements intentionally remain uncovered in the offline coverage report.
+- Actual onedir/windowed build completed with PyInstaller 6.22.3. Clean-temp-copy
+  --self-check and --smoke-test both passed and exited 0 with minimal internal/OS
+  PATH. Redirected stdout and explicit JSON report both returned successful results.
+  Engine loaded **1,751 extractors**; actual curl impersonation targets were present.
+  Certificates, resources, EJS data and offline bundled-Deno evaluation passed.
+  FFmpeg/ffprobe 9.0.2 and Deno 2.9.7 paths were beside the copied executable.
+  GUI smoke loaded native Windows platform, both themes, required image plugins,
+  About/disclaimer/Environment and waited for normal retained-worker shutdown.
+- All committed PowerShell scripts parsed without errors. Release workflow action
+  hashes/permission split, version-tag match, --basetemp and ordering were inspected.
+- Final zip: dist/MediaGrab-0.1.0-windows-x64.zip, **190,860,503 bytes**, 412 entries.
+  Required executables, platform plugin, QSS and current README/notices checked
+  inside the archive. SHA-256:
+  **af73d34f3125c85f3bec0f1fad31fa3eb7a165a8dd9badeba1e8af7eac70bc24**.
+  Local self-check evidence is retained in ignored build/self-check.json.
+- Tag workflow is committed and locally inspected, not executed on GitHub. Release
+  action refs were resolved through official GitHub release/tag APIs to commit
+  hashes. Existing CI is unchanged. Before tagging, distributor must supply the
+  reviewed full corresponding-source archive URL/SHA-256 described in README.
+- Optional live Blender download in the frozen exe was not run. Windows 10 was
+  not separately tested; local frozen evidence uses Windows 11 x64.
+
+Stop at Phase 6. Phase 7 requires the user's continue.

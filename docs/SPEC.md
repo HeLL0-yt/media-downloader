@@ -66,12 +66,47 @@ checks were performed by the user, not by automated tests.
 - Offline pytest-qt tests mock environment/updater/network/pip. Ruff and sequential
   coverage checks pass; manual user verification is listed in NOTES.md.
 
-Stop at the Phase 5 gate. Phase 6 requires a new user continue.
+Phase 5 user verification, 2026-10-04: first-run disclaimer, About,
+Engine/Environment panel, diagnostics, logs and normal MP4/MP3 downloads passed
+on Windows. Live updater and missing-Deno/FFmpeg simulation were not run.
 
-## Remaining roadmap (not Phase 5 work)
+## Phase 6 — Windows packaging and tagged release
 
-6. PyInstaller onedir/noconsole, verified binary fetch/build scripts, clean-path
-   validation and Windows release workflow; never commit executable binaries.
+- Local checkout only; Python 3.14 x64, committed mediagrab.spec, onedir/windowed
+  MediaGrab.exe, no UPX. Version comes from pyproject via importlib.metadata;
+  copy_metadata supplies the same version in frozen runs and Windows version info.
+- Package extractors/plugin support, EJS scripts/data, curl-cffi native libraries,
+  certifi CA bundle, Qt platforms/styles/imageformats, themes and generated icon.
+  Disclaimer/About text remains in the collected Python modules. Resource helper
+  uses package-relative source paths or sys._MEIPASS without consulting cwd.
+- Pinned supplier FFmpeg 9.0.2 GPLv3 essentials includes libx264. Official Deno
+  2.9.7 MIT is bundled. Fetch scripts compare published and committed SHA-256,
+  verify bytes before extraction into ignored vendor/packaging, and copy tools
+  next to MediaGrab.exe. Never commit binaries. Full notices/licence text ship.
+- Frozen engine pip updating stays refused. UI says to update MediaGrab to get a
+  newer engine. Future user engine-directory design is outside Phase 6.
+- Non-GUI --self-check logs JSON versions/paths, initializes engine extractors
+  and native impersonation, reads certificates/EJS/resources, probes bundled tools
+  and evaluates real EJS with Deno offline. --report supports windowed CI output.
+- Clean-temp-copy smoke runs with minimal PATH, exercises the real Windows Qt
+  window, Environment/disclaimer/About, both themes and image plugins, waits for
+  asynchronous offline checks and closes cooperatively with temporary INI settings.
+  It never accepts the disclaimer persistently or downloads live media.
+- Build isolates native dependency search inside the spec and refuses unrelated
+  DLL inputs. In particular it must not substitute Poppler ICU for Windows ICU.
+- Keep existing CI. A new v* release workflow on Windows/Python 3.14 runs sequential
+  offline gates before build/smoke/zip/SHA-256. Actions use pinned commits; only the
+  release job grants contents: write. Tags must match the single project version.
+  Publication requires a reviewed complete corresponding-source archive and hash
+  for the distributed GPL/LGPL components, uploaded beside the binary zip.
+- README covers unsigned-build checks, SmartScreen/antivirus, build/run commands
+  and the manual clean-folder/minimal-PATH checklist. Live Blender frozen download
+  is optional; Windows 10 acceptance is separate from local Windows 11 evidence.
+
+Stop at the Phase 6 gate. Phase 7 requires a new user continue.
+
+## Remaining roadmap (not Phase 6 work)
+
 7. Final README, badges/screenshots/architecture/usage/build/troubleshooting,
    CONTRIBUTING and macOS/Telegram/web roadmap.
 
