@@ -34,3 +34,16 @@ def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item
     for item in items:
         if item.get_closest_marker("network") is not None:
             item.add_marker(skip_network)
+
+
+@pytest.fixture(autouse=True)
+def mock_desktop_environment(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Desktop tests never probe the user's native tool installations."""
+    from mediagrab.core.environment import EnvironmentItem, EnvironmentResult, Severity
+    from mediagrab.desktop import engine_workers
+
+    monkeypatch.setattr(
+        engine_workers,
+        "inspect_environment",
+        lambda _cancel: EnvironmentResult((EnvironmentItem("yt-dlp", Severity.OK, "fixture"),)),
+    )

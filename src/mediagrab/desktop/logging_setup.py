@@ -25,11 +25,16 @@ class RedactedFormatter(logging.Formatter):
         return super().format(safe)
 
 
+def logs_directory() -> Path:
+    """Return the application log directory for platform folder actions."""
+    base = Path(os.environ.get("LOCALAPPDATA", str(Path.home() / "AppData" / "Local")))
+    return base / "MediaGrab" / "logs"
+
+
 def configure_logging(log_dir: Path | None = None) -> RotatingFileHandler:
     """Route application diagnostics exclusively to five bounded local log files."""
     if log_dir is None:
-        base = Path(os.environ.get("LOCALAPPDATA", str(Path.home() / "AppData" / "Local")))
-        log_dir = base / "MediaGrab" / "logs"
+        log_dir = logs_directory()
     log_dir.mkdir(parents=True, exist_ok=True)
     handler = RotatingFileHandler(
         log_dir / "mediagrab.log", maxBytes=2 * 1024 * 1024, backupCount=4, encoding="utf-8"

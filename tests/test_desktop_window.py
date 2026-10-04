@@ -76,8 +76,8 @@ def test_window_analysis_and_download(
     assert window.table.rowCount() == 1
     assert window.table.item(0, 4).text() == "100%"
     assert window.table.item(0, 3).text() == "Finished"
-    qtbot.waitUntil(lambda: "yt-dlp:" in window.statusBar().currentMessage(), timeout=15000)
-    assert "FFmpeg:" in window.statusBar().currentMessage()
+    qtbot.waitUntil(lambda: "Environment:" in window.statusBar().currentMessage(), timeout=15000)
+    assert window.engine_panel.report is not None
 
 
 def test_mode_quality_and_add_queue(qtbot: QtBot, window: MainWindow) -> None:

@@ -19,6 +19,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from mediagrab.core.environment import EnvironmentResult, Severity
 from mediagrab.core.errors import MediaGrabError
 from mediagrab.core.models import (
     AUDIO_BITRATES,
@@ -28,12 +29,14 @@ from mediagrab.core.models import (
     ProgressEvent,
     VideoInfo,
 )
+from mediagrab.desktop.about import AboutDialog, DisclaimerDialog
+from mediagrab.desktop.engine_panel import EnginePanel
+from mediagrab.desktop.engine_workers import EngineTaskWorker
 from mediagrab.desktop.queue_manager import QueueManager
 from mediagrab.desktop.settings import DesktopSettings, SettingsDialog, SettingsStore, apply_theme
 from mediagrab.desktop.widgets import InfoCard, QueueTable, UrlInput
 from mediagrab.desktop.workers import (
     AnalysisWorker,
-    EngineVersionsWorker,
     ThumbnailWorker,
     friendly_error,
 )
@@ -58,8 +61,10 @@ class MainWindow(QMainWindow):
         self.queue = QueueManager(settings.parallel_limit)
         self.info: VideoInfo | None = None
         self.analysis: AnalysisWorker | None = None
-        self.aux_workers: list[AnalysisWorker | EngineVersionsWorker | ThumbnailWorker] = []
+        self._analysis_source: AnalysisWorker | None = None
+        self.aux_workers: list[AnalysisWorker | EngineTaskWorker | ThumbnailWorker] = []
         self.closing = False
+        self.updating = False
         self._ready_to_close = False
         self._build(settings)
         self.queue.changed.connect(self._refresh)
@@ -69,12 +74,73 @@ class MainWindow(QMainWindow):
         self.timer.setInterval(20)
         self.timer.timeout.connect(self._reap)
         self.timer.start()
-        probe = EngineVersionsWorker()
-        probe.result.connect(self._versions)
+        self.engine_panel = EnginePanel(
+            self, self.aux_workers.append, self._engine_busy, self._updating
+        )
+        self.engine_panel.environment_changed.connect(self._environment)
+        probe = EngineTaskWorker("environment")
+        probe.result.connect(self._environment)
+        probe.error.connect(self.statusBar().showMessage)
         self.aux_workers.append(probe)
         probe.start()
 
+    def _engine_busy(self) -> bool:
+        return bool(
+            self.queue.workers or self.analysis is not None or self.closing or self.updating
+        )
+
+    def _updating(self, active: bool) -> None:
+        self.updating = active
+        self.queue.suspended = active
+        self.analyze_button.setEnabled(not active and self.analysis is None and not self.closing)
+        self.add_button.setEnabled(not active and self.info is not None and not self.closing)
+        self.download_button.setEnabled(not active and self.info is not None and not self.closing)
+        if not active and self.queue.running:
+            self.queue.start()
+
+    @Slot(object)
+    def _environment(self, report: EnvironmentResult) -> None:
+        if self.closing:
+            return
+        self.engine_panel.set_report(report)
+        issues = [
+            item.name
+            for item in report.items
+            if item.severity is not Severity.OK
+            and item.detail != "Not found (optional alternative)"
+        ]
+        self.statusBar().showMessage(
+            "Environment: "
+            + (
+                ", ".join(issues) + " — open Settings > Engine/Environment for fixes."
+                if issues
+                else "ready. See Settings > Engine/Environment for versions."
+            )
+        )
+
+    @Slot()
+    def _show_engine(self) -> None:
+        self.engine_panel.show()
+        self.engine_panel.raise_()
+
+    @Slot()
+    def _about(self) -> None:
+        dialog = AboutDialog(self)
+        dialog.exec()
+        dialog.deleteLater()
+
+    @Slot()
+    def _disclaimer(self) -> None:
+        dialog = DisclaimerDialog(self)
+        dialog.exec()
+        dialog.deleteLater()
+
     def _build(self, settings: DesktopSettings) -> None:
+        settings_menu = self.menuBar().addMenu("Settings")
+        settings_menu.addAction("Engine/Environment…", self._show_engine)
+        help_menu = self.menuBar().addMenu("Help")
+        help_menu.addAction("About…", self._about)
+        help_menu.addAction("Responsible use disclaimer…", self._disclaimer)
         central = QWidget()
         self.setCentralWidget(central)
         layout = QVBoxLayout(central)
@@ -180,7 +246,11 @@ class MainWindow(QMainWindow):
     @Slot(str)
     def _analysis_error(self, message: str) -> None:
         worker = self.sender()
-        if not self.closing and worker is self.analysis and worker.url == self.url.text().strip():
+        if (
+            not self.closing
+            and worker is self._analysis_source
+            and worker.url == self.url.text().strip()
+        ):
             self.message.setText(message)
 
     @Slot(object, bytes)
@@ -218,7 +288,7 @@ class MainWindow(QMainWindow):
 
     @Slot()
     def _analyze(self) -> None:
-        if self.closing or self.analysis is not None:
+        if self.closing or self.updating or self.analysis is not None:
             return
         self._invalidate()
         self.analyze_button.setEnabled(False)
@@ -226,6 +296,7 @@ class MainWindow(QMainWindow):
         worker.result.connect(self._analyzed)
         worker.error.connect(self._analysis_error)
         self.analysis = worker
+        self._analysis_source = worker
         self.aux_workers.append(worker)
         self.message.setText(self.tr("Analyzing…"))
         worker.start()
@@ -233,7 +304,11 @@ class MainWindow(QMainWindow):
     @Slot(object, bytes)
     def _analyzed(self, info: VideoInfo, thumbnail: bytes) -> None:
         worker = self.sender()
-        if self.closing or worker is not self.analysis or worker.url != self.url.text().strip():
+        if (
+            self.closing
+            or worker is not self._analysis_source
+            or worker.url != self.url.text().strip()
+        ):
             return
         self.info = info
         self.card.show_info(info, thumbnail)
@@ -243,13 +318,13 @@ class MainWindow(QMainWindow):
             preview.result.connect(self._thumbnail_ready)
             self.aux_workers.append(preview)
             preview.start()
-        self.add_button.setEnabled(True)
-        self.download_button.setEnabled(True)
+        self.add_button.setEnabled(not self.updating)
+        self.download_button.setEnabled(not self.updating)
         self.message.setText(self.tr("Information ready. Add a task or download."))
 
     @Slot()
     def _add(self) -> None:
-        if self.info is None or self.closing:
+        if self.info is None or self.closing or self.updating:
             return
         if not self.folder.text().strip():
             self.message.setText(self.tr("Choose an output folder."))
@@ -291,7 +366,7 @@ class MainWindow(QMainWindow):
 
     @Slot(str, str)
     def _action(self, job_id: str, action: str) -> None:
-        if self.closing:
+        if self.closing or self.updating:
             return
         if action == "cancel":
             self.queue.cancel(job_id)
@@ -312,12 +387,15 @@ class MainWindow(QMainWindow):
 
     @Slot()
     def _reap(self) -> None:
+        self.engine_panel.reap()
         for worker in tuple(self.aux_workers):
+            if worker is self.engine_panel.worker:
+                continue
             if worker.isFinished() and worker.wait(0):
                 self.aux_workers.remove(worker)
                 if worker is self.analysis:
                     self.analysis = None
-                    self.analyze_button.setEnabled(not self.closing)
+                    self.analyze_button.setEnabled(not self.closing and not self.updating)
                 worker.deleteLater()
         if self.closing and not self.aux_workers and not self.queue.workers:
             self._ready_to_close = True
@@ -333,6 +411,8 @@ class MainWindow(QMainWindow):
         if not self.closing:
             self.closing = True
             self.centralWidget().setEnabled(False)
+            self.menuBar().setEnabled(False)
+            self.engine_panel.setEnabled(False)
             self.message.setText(self.tr("Stopping workers…"))
             self.queue.shutdown()
             for worker in self.aux_workers:

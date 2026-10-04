@@ -5,8 +5,9 @@ import sys
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QGuiApplication
-from PySide6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication, QMessageBox
 
+from mediagrab.desktop.about import ensure_disclaimer
 from mediagrab.desktop.logging_setup import configure_logging
 from mediagrab.desktop.main_window import MainWindow
 from mediagrab.desktop.settings import SettingsStore, apply_theme
@@ -26,6 +27,15 @@ def main() -> int:
     handler = configure_logging()
     try:
         store = SettingsStore()
+        try:
+            if not ensure_disclaimer(store):
+                return 0
+        except OSError:
+            logger.exception("Disclaimer acceptance could not be saved.")
+            QMessageBox.critical(
+                None, "MediaGrab", "Acceptance could not be saved. Check account permissions."
+            )
+            return 1
         settings = store.load()
         apply_theme(app, settings.theme)
         window = MainWindow(settings, settings_store=store)

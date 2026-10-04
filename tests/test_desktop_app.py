@@ -21,6 +21,7 @@ def test_entry_point(qtbot: QtBot, monkeypatch: pytest.MonkeyPatch, tmp_path: Pa
 
     monkeypatch.setattr(app, "configure_logging", lambda: configure_logging(tmp_path / "logs"))
     monkeypatch.setattr(app.SettingsStore, "load", lambda self: DesktopSettings())
+    monkeypatch.setattr(app, "ensure_disclaimer", lambda _store: True)
     application = Mock()
 
     def execute() -> int:

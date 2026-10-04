@@ -43,6 +43,7 @@ class QueueManager(QObject):
         self.workers: dict[str, DownloadWorker] = {}
         self.running = False
         self.closing = False
+        self.suspended = False
 
     def add(self, request: DownloadRequest, title: str) -> str:
         """Append a request, starting it only if the queue is running."""
@@ -68,7 +69,7 @@ class QueueManager(QObject):
         self._pump()
 
     def _pump(self) -> None:
-        if not self.running or self.closing:
+        if not self.running or self.closing or self.suspended:
             return
         for item in self.items.values():
             if len(self.workers) >= self.parallel_limit:
