@@ -6,7 +6,10 @@ and PySide6 for the interface.
 
 **Current status: Phases 0–5 implemented. Phase 4 Windows platform checks passed,
 verified manually by the user on 2026-10-04, not by automated tests. Phase 5's
-offline automated gate passed; its user manual checklist is in docs/NOTES.md.
+offline automated gate passed. On 2026-10-04 the user manually verified the
+first-run disclaimer, About, Engine/Environment panel, diagnostics, logs and
+normal MP4/MP3 downloads on Windows. The live updater and missing-Deno/FFmpeg
+simulation were not run; the remaining manual instructions are in docs/NOTES.md.
 Phase 6 has not started.**
 
 ## Existing features
@@ -286,7 +289,7 @@ Qt signals. Windows-specific integration will be isolated from the core.
 | 2 | Downloader, error mapping, cancellation, CLI, integration test | Implemented |
 | 3 | Desktop layout and fake worker | Implemented |
 | 4 | Real workers, queue, progress, settings, local logs and typed errors | Implemented; user manual gate passed |
-| 5 | Environment checks, confirmed venv updater, disclaimer/About, diagnostics and error UX | Implemented; automated gate passed |
+| 5 | Environment checks, confirmed venv updater, disclaimer/About, diagnostics and error UX | Implemented; automated gate passed; Windows UI, diagnostics, logs and normal downloads user-verified; live updater and missing-tool simulation not run |
 | 6 | Windows packaging and tagged release workflow | Pending |
 | 7 | Full documentation, screenshots, contribution guide, roadmap | Pending |
 

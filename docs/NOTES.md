@@ -4,7 +4,10 @@
 
 Phases 0–5 are implemented; Phase 4 manual Windows gate passed,
 verified by the user on 2026-10-04, not by automated tests.
-Phase 5 automated checks pass. Phase 6 has not started.
+Phase 5 automated checks pass. On 2026-10-04 the user manually verified the
+first-run disclaimer, About, Engine/Environment panel, diagnostics, logs and
+normal MP4/MP3 downloads on Windows. The live updater and missing-Deno/FFmpeg
+simulation were not run. Phase 6 has not started.
 Core is Qt independent. Current contracts are in SPEC.md and DECISIONS.md.
 
 ## Phase 4 evidence — 2026-10-04
@@ -54,8 +57,10 @@ Core is Qt independent. Current contracts are in SPEC.md and DECISIONS.md.
 - Sequential offline pytest --basetemp=.pytest_tmp: **606 passed, 1 network test
   skipped**, 12.79 seconds. Branch-inclusive coverage: **core 98.72%, desktop
   95.47%, combined 97.07%**, above the unchanged 80% threshold.
-- These tests establish offline behavior. Phase 5 live updater installation and
-  Windows UI acceptance remain for the user's manual verification below.
+- These tests establish offline behavior. The user manually verified the first-run
+  disclaimer, About, Engine/Environment panel, diagnostics, logs and normal MP4/MP3
+  downloads on Windows on 2026-10-04. The live updater and missing-Deno/FFmpeg
+  simulation were not run. This is user-reported evidence, not automated testing.
 
 ## Phase-gate checklist
 
