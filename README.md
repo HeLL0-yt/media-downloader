@@ -27,12 +27,12 @@ These previews are labelled placeholders, not application captures. Replace them
 
 | View | Placeholder | Required real file |
 | --- | --- | --- |
-| Dark interface and metadata | ![Placeholder: dark interface](docs/images/main-dark.svg) | `docs/images/main-dark.png` |
-| Light interface | ![Placeholder: light interface](docs/images/main-light.svg) | `docs/images/main-light.png` |
-| Active queue | ![Placeholder: queue](docs/images/download-queue.svg) | `docs/images/download-queue.png` |
-| Preferences | ![Placeholder: settings](docs/images/settings.svg) | `docs/images/settings.png` |
-| Engine and environment | ![Placeholder: environment](docs/images/engine-environment.svg) | `docs/images/engine-environment.png` |
-| About and versions | ![Placeholder: About](docs/images/about.svg) | `docs/images/about.png` |
+| Dark interface and metadata | ![Placeholder: dark interface](docs/images/main-dark.png) | `docs/images/main-dark.png` |
+| Light interface | ![Placeholder: light interface](docs/images/main-light.png) | `docs/images/main-light.png` |
+| Active queue | ![Placeholder: queue](docs/images/download-queue.png) | `docs/images/download-queue.png` |
+| Preferences | ![Placeholder: settings](docs/images/settings.png) | `docs/images/settings.png` |
+| Engine and environment | ![Placeholder: environment](docs/images/engine-environment.png) | `docs/images/engine-environment.png` |
+| About and versions | ![Placeholder: About](docs/images/about.png) | `docs/images/about.png` |
 
 ## Quick start from source
 
