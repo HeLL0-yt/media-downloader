@@ -10,6 +10,7 @@ from typing import Any
 import yt_dlp
 from yt_dlp.postprocessor import get_postprocessor
 
+from mediagrab.core.environment import runtime_options
 from mediagrab.core.errors import DownloadCancelledError, ExtractionError
 from mediagrab.core.errors_map import map_error
 from mediagrab.core.ffmpeg import ensure_ffmpeg
@@ -128,6 +129,8 @@ def get_info(
             "quiet": True,
             "no_warnings": True,
             "skip_download": True,
+            "js_runtimes": runtime_options(),
+            "remote_components": set(),
             "noplaylist": True,
             "socket_timeout": 20,
             "cachedir": False,
@@ -210,6 +213,8 @@ def download(request: DownloadRequest, on_progress: ProgressCallback, cancel_eve
         )
         specs = options.pop("postprocessors")
         options["logger"] = EngineLogger(_LOGGER)
+        options["js_runtimes"] = runtime_options()
+        options["remote_components"] = set()
         # Optional artwork is fetched after audio conversion, so its I/O failures
         # cannot abort a successful media transfer. The wrapper embeds it below.
         if request.format.mode is DownloadMode.AUDIO:

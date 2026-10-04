@@ -7,6 +7,7 @@ import sys
 from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Literal
 
 from mediagrab.core.errors import FfmpegNotFoundError, FfmpegVersionError
 from mediagrab.core.process import run_process
@@ -47,6 +48,16 @@ def _search_directories() -> Iterator[Path]:
             yield directory
 
 
+def locate_media_binary(name: Literal["ffmpeg", "ffprobe"]) -> Path | None:
+    """Find one executable for diagnostics even when the pair is incomplete."""
+    suffix = ".exe" if os.name == "nt" else ""
+    for directory in dict.fromkeys(_search_directories()):
+        binary = directory / f"{name}{suffix}"
+        if binary.is_file() and os.access(binary, os.X_OK):
+            return binary
+    return None
+
+
 def locate_ffmpeg() -> FfmpegPaths | None:
     """Find executables next to the app, in its frozen bundle, then on PATH.
 
@@ -75,6 +86,11 @@ def _read_version(binary: Path, name: str) -> str:
     if match is None:
         raise FfmpegVersionError(f"{name} did not return a valid version. Reinstall FFmpeg.")
     return match.group(1)
+
+
+def get_media_binary_version(binary: Path, name: Literal["ffmpeg", "ffprobe"]) -> str:
+    """Probe one discovered media executable for an incomplete-install report."""
+    return _read_version(binary, name)
 
 
 def get_ffmpeg_versions(paths: FfmpegPaths) -> FfmpegVersions:

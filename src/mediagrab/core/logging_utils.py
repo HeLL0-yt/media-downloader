@@ -5,6 +5,7 @@ import re
 import traceback
 
 _URL = re.compile(r"https?://[^\s\"'<>]+", re.IGNORECASE)
+_PATH = re.compile(r"(?:[A-Za-z]:[\\/]|/Users/|/home/)[^\n\r\"<>]+")
 _SECRET = re.compile(r"cookie|authorization|bearer\s", re.IGNORECASE)
 
 
@@ -19,7 +20,7 @@ def redact_message(message: str) -> str:
     """
     if _SECRET.search(message):
         return "[authentication diagnostic redacted]"
-    return _URL.sub("[URL redacted]", message)
+    return _PATH.sub("[path redacted]", _URL.sub("[URL redacted]", message))
 
 
 def log_exception(logger: logging.Logger, message: str, error: BaseException) -> None:
@@ -58,7 +59,8 @@ def _format_trace(trace: traceback.TracebackException) -> str:
     parts.append("Traceback (most recent call last):\n")
     # Retain every frame without logging source lines, locals, or frame reprs.
     for frame in trace.stack:
-        filename = _URL.sub("[URL redacted]", frame.filename)
+        filename = frame.filename.replace("\\", "/").rsplit("/", 1)[-1]
+        filename = _URL.sub("[URL redacted]", filename)
         parts.append(f'  File "{filename}", line {frame.lineno}, in {frame.name}\n')
     diagnostic = redact_message("".join(trace.format_exception_only()))
     if diagnostic == "[authentication diagnostic redacted]":

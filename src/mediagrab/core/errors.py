@@ -44,7 +44,7 @@ class FfmpegNotFoundError(MediaGrabError):
     default_message: ClassVar[str] = (
         "FFmpeg and ffprobe were not found together. Install both executables "
         "in one folder and add that folder to PATH, or place them next to MediaGrab. "
-        "Install the FFmpeg binaries, not the Python ffmpeg package."
+        "Install the FFmpeg binaries, not the Python ffmpeg package. Restart MediaGrab and retry."
     )
 
 
@@ -80,14 +80,16 @@ class LoginRequiredError(ExtractionError):
 
     default_message: ClassVar[str] = (
         "This media requires login. Sign in using your browser, then enable "
-        "cookies from that browser in MediaGrab settings."
+        "cookies from that browser in MediaGrab settings, then retry."
     )
 
 
 class GeoBlockedError(ExtractionError):
     """The platform does not make the media available in this region."""
 
-    default_message: ClassVar[str] = "This media is not available in your region."
+    default_message: ClassVar[str] = (
+        "This media is not available in your region. Retry only when the platform grants access."
+    )
 
 
 class PrivateVideoError(ExtractionError):
@@ -103,7 +105,7 @@ class AgeRestrictionError(ExtractionError):
 
     default_message: ClassVar[str] = (
         "This media is age restricted. Complete the platform's age verification "
-        "in your browser before using browser cookies."
+        "in your browser, enable that browser's cookies in Settings, then retry."
     )
 
 

@@ -3,14 +3,18 @@
 import os
 import subprocess
 import time
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from threading import Event
 
 from mediagrab.core.errors import DownloadCancelledError
 
 
 def run_process(
-    args: Sequence[str], *, timeout: float = 10.0, cancel_event: Event | None = None
+    args: Sequence[str],
+    *,
+    timeout: float = 10.0,
+    cancel_event: Event | None = None,
+    env: Mapping[str, str] | None = None,
 ) -> subprocess.CompletedProcess[str]:
     """Run an argument list with captured output and a finite timeout.
 
@@ -21,6 +25,7 @@ def run_process(
         args: Executable and separate arguments, without shell interpolation.
         timeout: Maximum process duration in seconds.
         cancel_event: Optional cancellation checked while the child runs.
+        env: Optional isolated environment for the child.
 
     Returns:
         Successful process result with UTF-8 text output.
@@ -33,7 +38,7 @@ def run_process(
     """
     creationflags = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
     if cancel_event is not None:
-        return _run_cancellable(args, timeout, cancel_event, creationflags)
+        return _run_cancellable(args, timeout, cancel_event, creationflags, env)
     return subprocess.run(  # noqa: S603 -- Callers provide executable paths; no shell is used.
         list(args),
         shell=False,
@@ -44,11 +49,16 @@ def run_process(
         errors="replace",
         timeout=timeout,
         creationflags=creationflags,
+        **({"env": env} if env is not None else {}),
     )
 
 
 def _run_cancellable(
-    args: Sequence[str], timeout: float, cancel_event: Event, creationflags: int
+    args: Sequence[str],
+    timeout: float,
+    cancel_event: Event,
+    creationflags: int,
+    env: Mapping[str, str] | None,
 ) -> subprocess.CompletedProcess[str]:
     if cancel_event.is_set():
         raise DownloadCancelledError()
@@ -63,6 +73,7 @@ def _run_cancellable(
         encoding="utf-8",
         errors="replace",
         creationflags=creationflags,
+        **({"env": env} if env is not None else {}),
     ) as child:
         deadline = time.monotonic() + timeout
         try:
