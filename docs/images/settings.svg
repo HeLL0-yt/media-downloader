@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="200" viewBox="0 0 640 200" role="img" aria-labelledby="title desc">
+<title id="title">Screenshot placeholder: Preferences dialog</title>
+<desc id="desc">Not an application capture. Replace with settings.png.</desc>
+<rect width="640" height="200" rx="12" fill="#17212f"/>
+<text x="320" y="68" text-anchor="middle" fill="#e6edf3" font-family="sans-serif" font-size="23">Preferences dialog</text>
+<text x="320" y="112" text-anchor="middle" fill="#adc4de" font-family="sans-serif" font-size="18">SCREENSHOT PLACEHOLDER</text>
+<text x="320" y="150" text-anchor="middle" fill="#adc4de" font-family="sans-serif" font-size="16">Add settings.png — no real capture supplied</text>
+</svg>

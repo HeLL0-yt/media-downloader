@@ -1,6 +1,8 @@
 # Third-party notices for MediaGrab Windows bundles
 
 MediaGrab source is MIT; see LICENSE. Dependencies retain their own licences.
+Binaries are not currently distributed. The following describes local Windows
+builds and prerequisites for any future binary distribution.
 This onedir distribution contains replaceable libraries under _internal and separate
 FFmpeg/ffprobe/Deno executables. Users may replace those components and reverse
 engineer the application as needed to debug modifications to LGPL components.
@@ -27,7 +29,8 @@ Redistributors must provide the complete corresponding source, including linked
 libraries and build scripts, under GPLv3 section 6. A link to FFmpeg alone is not
 the complete corresponding source for this static build. The release workflow
 requires a distributor-provided corresponding-source archive and publishes it
-beside the Windows zip; see README for the repository variable used to select it.
+beside the Windows zip; see [Building](docs/BUILDING.md) for the repository
+variables used to select it.
 MediaGrab communicates with these executables through subprocesses; they are not
 linked into MediaGrab. No --enable-nonfree build is distributed.
 

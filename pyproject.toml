@@ -5,21 +5,23 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "mediagrab"
 version = "0.1.0"
-description = "A Windows desktop video and audio downloader powered by yt-dlp and Qt."
+description = "Windows desktop and CLI media downloader with a reusable Python core, yt-dlp, FFmpeg and PySide6."
 readme = "README.md"
 requires-python = ">=3.14,<3.15"
 license = "MIT"
 license-files = ["LICENSE"]
-keywords = ["desktop", "media", "pyside6", "yt-dlp"]
+keywords = ["desktop", "media-downloader", "video", "audio", "pyside6", "yt-dlp", "ffmpeg"]
 classifiers = [
     "Development Status :: 2 - Pre-Alpha",
     "Environment :: Win32 (MS Windows)",
+    "Environment :: Console",
     "Intended Audience :: End Users/Desktop",
     "Operating System :: Microsoft :: Windows :: Windows 10",
     "Operating System :: Microsoft :: Windows :: Windows 11",
     "Programming Language :: Python :: 3 :: Only",
     "Programming Language :: Python :: 3.14",
     "Topic :: Multimedia :: Video",
+    "Topic :: Multimedia :: Sound/Audio",
 ]
 dependencies = [
     "PySide6>=6.11.2,<6.12",
@@ -38,8 +40,10 @@ dev = [
 build = ["pyinstaller>=6.22.3,<7"]
 
 [project.urls]
+Homepage = "https://github.com/mr-ransaz/MediaGrab"
 Repository = "https://github.com/mr-ransaz/MediaGrab"
 Issues = "https://github.com/mr-ransaz/MediaGrab/issues"
+Changelog = "https://github.com/mr-ransaz/MediaGrab/blob/main/CHANGELOG.md"
 
 [tool.setuptools.packages.find]
 where = ["src"]
