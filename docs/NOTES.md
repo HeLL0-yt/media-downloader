@@ -2,7 +2,7 @@
 
 ## Current status and contracts
 
-Phases 0–4 are implemented; Phase 4 awaits manual checks and user continue.
+Phases 0–4 are implemented; Phase 4 manual Windows gate passed, verified by the user on 2026-10-04, not by automated tests.
 The desktop now calls the real core API. Phase 5 has not started.
 Core is Qt independent. Current contracts are in SPEC.md and DECISIONS.md.
 
@@ -62,11 +62,9 @@ YouTube/TikTok/Instagram desktop behavior or account-dependent URLs.
 Full older per-phase evidence and installed-source references are preserved in
 [HISTORY.md](HISTORY.md). Historical pending-phase wording is superseded above.
 
-## Pending manual gate
+## Phase 4 manual gate — passed, 2026-10-04
 
-Use media you have permission to download. Through the window, test 1080p MP4
-and MP3 from each of YouTube, TikTok and Instagram (select a source that offers
-1080p); then cancel mid-download, invalid URL, no internet and close during an
-active download. Verify final files/playback, terminal statuses, retry and process
-exit. Shutdown may wait for upstream cancellation boundaries. No live platform
-success is claimed from mocked/offscreen tests. Stop for user continue.
+The user manually verified the Windows desktop gate: YouTube, TikTok and
+Instagram 1080p MP4 and MP3 downloads from the window, cancellation mid-download,
+invalid URL, no internet and close during download all worked. This evidence was
+reported by the user; these live platform checks were not automated tests.

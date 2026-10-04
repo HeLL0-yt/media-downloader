@@ -2,8 +2,10 @@
 
 ## Current status and contracts
 
-Phases 0–4 are implemented. Phase 4 awaits manual checks and user continue.
-Phase 5 is not started.
+Phases 0–4 are implemented. Phase 4 manual Windows gate passed, verified by the user on 2026-10-04, not by automated tests.
+Phase 5 is not started. Phase 4 user-reported live checks passed for YouTube,
+TikTok and Instagram 1080p MP4/MP3, cancellation, invalid URL, offline failure
+and close during download; automated tests do not establish live platform success.
 Work in the existing local checkout; no cloud, worktree, new repository or push.
 
 - Python 3.14, Windows 10/11, PySide6, yt-dlp, native FFmpeg/ffprobe.

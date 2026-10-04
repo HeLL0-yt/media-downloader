@@ -5,7 +5,8 @@ Its download engine uses yt-dlp as a library, FFmpeg for media processing,
 and PySide6 for the interface.
 
 **Current status: Phases 0–4 implemented. Phase 4 automated checks are complete;
-manual platform checks are pending. Phase 5 has not started.**
+the user manually verified the Windows platform gate as passed on 2026-10-04.
+This live verification was performed by the user, not by automated tests. Phase 5 has not started.**
 
 ## Existing features
 
