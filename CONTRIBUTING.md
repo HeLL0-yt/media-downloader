@@ -1,6 +1,6 @@
 # Contributing
 
-Read [Development](docs/DEVELOPMENT.md), [Architecture](docs/ARCHITECTURE.md) and [AGENTS.md](AGENTS.md). Keep core independent of Qt. Use Windows and CPython 3.14 x64.
+Read [Development](docs/DEVELOPMENT.md) and [Architecture](docs/ARCHITECTURE.md). Keep core independent of Qt. Use Windows and CPython 3.14 x64.
 
 ## Setup and checks
 
