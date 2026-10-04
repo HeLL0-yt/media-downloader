@@ -103,12 +103,25 @@ on Windows. Live updater and missing-Deno/FFmpeg simulation were not run.
   and the manual clean-folder/minimal-PATH checklist. Live Blender frozen download
   is optional; Windows 10 acceptance is separate from local Windows 11 evidence.
 
-Stop at the Phase 6 gate. Phase 7 requires a new user continue.
+Phase 6 is complete. Phase 7 was authorized by the user on 2026-10-04.
 
-## Remaining roadmap (not Phase 6 work)
+## Phase 7 — documentation and repository polish, 2026-10-04
 
-7. Final README, badges/screenshots/architecture/usage/build/troubleshooting,
-   CONTRIBUTING and macOS/Telegram/web roadmap.
+Public README covers existing features, source setup, GUI/CLI usage, sites/cookie
+limits, architecture, structure, gates, builds, troubleshooting, privacy and use.
+Phase history is preserved in PHASES.md and HISTORY.md. ARCHITECTURE, DEVELOPMENT
+and BUILDING explain contracts, threading, cancellation, errors, environment,
+updater, frozen deployment and trade-offs. Contributor/security/conduct guides,
+issue/PR templates and CHANGELOG are included. Metadata is polished without
+changing dependencies or coverage. Six labelled SVG screenshot placeholders have
+an exact PNG capture checklist; real screenshots remain user-supplied work.
+No feature changes, app launch, downloads, push, tag or release in this phase.
+Stop at the completed Phase 7 gate; future work needs a new user instruction.
+
+## Future roadmap (not implemented)
+
+macOS, a Telegram bot reusing core, a web app, optional cookies.txt import and
+optional staged frozen engine updates with rollback.
 
 For personal use only. Respect copyright and the Terms of Service of each
 platform. The authors don't encourage downloading content you have no rights to.

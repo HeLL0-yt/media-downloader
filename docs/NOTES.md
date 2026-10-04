@@ -2,13 +2,13 @@
 
 ## Current status and contracts
 
-Phases 0–6 are implemented; Phase 4 manual Windows gate passed,
+Phases 0–7 are implemented; Phase 4 manual Windows gate passed,
 verified by the user on 2026-10-04, not by automated tests.
 Phase 5 automated checks pass. On 2026-10-04 the user manually verified the
 first-run disclaimer, About, Engine/Environment panel, diagnostics, logs and
 normal MP4/MP3 downloads on Windows. The live updater and missing-Deno/FFmpeg
 simulation were not run. Phase 6 packaging evidence is recorded below;
-Phase 7 has not started.
+Phase 7 documentation is implemented; real screenshots remain user-supplied.
 Core is Qt independent. Current contracts are in SPEC.md and DECISIONS.md.
 
 ## Phase 4 evidence — 2026-10-04
@@ -242,7 +242,7 @@ Close the app and shell; subsequent normal launches use the normal PATH.
 - Optional live Blender download in the frozen exe was not run. Windows 10 was
   not separately tested; local frozen evidence uses Windows 11 x64.
 
-Stop at Phase 6. Phase 7 requires the user's continue.
+Phase 6 historical gate completed; the user authorized Phase 7 on 2026-10-04.
 
 ## Phase 6 user verification and distribution decision — 2026-10-04
 
@@ -260,3 +260,40 @@ URL and SHA-256 via MEDIAGRAB_CORRESPONDING_SOURCE_URL and
 MEDIAGRAB_CORRESPONDING_SOURCE_SHA256. Missing/invalid prerequisites or a checksum
 mismatch fail the build job before artifacts reach the dependent publishing job.
 Workflow inspection does not establish completeness of the supplied source.
+
+## Phase 7 verification — 2026-10-04
+
+- Housekeeping commit 8828fc0 separately records exactly the user's Phase 6
+  Windows extraction/launch/bundled-tools/MP4/MP3 verification and source-only
+  decision. Windows 10 and live frozen Blender checks remain not run.
+- Read AGENTS, SPEC, DECISIONS, NOTES, README, pyproject and third-party notices;
+  supplied the requested 10-line summary and plan before Phase 7 editing.
+- Public README and ARCHITECTURE/DEVELOPMENT/BUILDING checked against source,
+  tests, CLI parser, build scripts and workflow. Internal phase table preserved in
+  PHASES; older evidence remains in HISTORY. Six SVG placeholders are labelled
+  and XML-parsed; the exact real PNG capture list is in images/README.md.
+- Added contributor/security/conduct policies, issue/PR templates and changelog.
+  Metadata description/keywords/classifiers/URLs updated; TOML parsed and compared
+  to the housekeeping HEAD: all dependencies, optional dependencies, Ruff, pytest
+  and coverage configuration are unchanged. No application or test changes.
+- Checked 54 Markdown links across 16 current documentation/template files:
+  local targets/anchors all resolve; 10 external destinations checked for HTTPS
+  syntax only. Remote availability/private security reporting was not tested.
+  Archived HISTORY was excluded from current-link validation.
+- Parsed all 20 PowerShell blocks in current command guides/NOTES without syntax
+  errors. Referenced modules/scripts/tests inspected; CLI --help and pip check
+  passed on Python 3.14.0. Python and winget resolve locally. FFmpeg, ffprobe and
+  Deno are absent from this shell's PATH; existing dist/MediaGrab binaries answer
+  version commands (FFmpeg/ffprobe 9.0.2; Deno 2.9.7). Source instructions explicitly
+  require tool installation/PATH and a restarted shell.
+- Installation, audit, build/smoke, GUI and live download commands were inspected,
+  not executed in Phase 7. No app launch, network test or real updater was run.
+- Ruff lint passed; Ruff format --check passed (79 files). Sequential offline
+  pytest --basetemp=.pytest_tmp: **619 passed, 1 network test skipped**, 9.66 seconds.
+  Combined branch coverage **93.93%**, identical to the recorded Phase 6 result;
+  required threshold remains **80%**. No app ran during pytest. git diff --check
+  passed. Release workflow remains unchanged and source URL/hash publication
+  prerequisites were inspected, not exercised remotely.
+- Work stayed in C:/Projects/media-downloader. No cloud, worktree, push, tag or
+  release. Phase 7 documentation gate complete; real PNG captures remain the user's
+  explicitly reserved task. Stop here pending a new user instruction.

@@ -2,12 +2,12 @@
 
 ## Current status and contracts
 
-Phases 0–6 are implemented. Phase 4 manual Windows gate passed,
+Phases 0–7 are implemented. Phase 4 manual Windows gate passed,
 verified by the user on 2026-10-04, not by automated tests.
 Phase 5's offline automated gate passed. The user verified first-run disclaimer,
 About, Environment, diagnostics, logs and normal MP4/MP3 downloads on Windows;
 live updater and missing-tool simulation were not run. Phase 6 frozen verification
-and release prerequisites are recorded in NOTES.md. Phase 7 has not started.
+and release prerequisites are recorded in NOTES.md. Phase 7 documentation is implemented; real screenshots remain user-supplied.
 Work in the existing local checkout; no cloud, worktree, new repository or push.
 
 - Python 3.14, Windows 10/11, PySide6, yt-dlp, native FFmpeg/ffprobe.
@@ -60,7 +60,7 @@ Work in the existing local checkout; no cloud, worktree, new repository or push.
   preserving process ownership; cancellation does not force immediate shutdown.
 - Production workers contain no simulation; legacy fixtures live under tests.
 - Phase 5 environment/updater/disclaimer/diagnostics and Phase 6 packaging/release
-  infrastructure are implemented. Final documentation/roadmap remains Phase 7.
+  infrastructure are implemented. Phase 7 documents the existing behavior and future roadmap.
 - Default tests are offline. Verify unsure APIs against installed packages.
   Run pytest and app sequentially; pytest uses --basetemp=.pytest_tmp.
 - Before every final phase commit update README, SPEC, DECISIONS and NOTES,
@@ -212,3 +212,20 @@ URL and SHA-256 via MEDIAGRAB_CORRESPONDING_SOURCE_URL and
 MEDIAGRAB_CORRESPONDING_SOURCE_SHA256. Missing/invalid prerequisites or a checksum
 mismatch fail the build job before artifacts reach the dependent publishing job.
 Workflow inspection does not establish completeness of the supplied source.
+
+## Phase 7 documentation decisions — 2026-10-04
+
+- Public README replaces internal phase detail with links to PHASES/HISTORY/NOTES.
+  The AGENTS phase-table rule is satisfied through the linked maintained table;
+  the user explicitly requested moving it out of README.
+- Split interview-oriented architecture, development commands and detailed local
+  build instructions so the README stays focused on public use.
+- Use six labelled SVG placeholders, never simulated evidence; PNG captures are
+  pending from the user. Cookies.txt, macOS, Telegram/web and frozen updates remain
+  clearly future work. No dedicated security contact or enabled private-reporting
+  configuration is invented; the policy gives a conditional private route.
+- Keep release workflow unchanged: its source URL/hash and dependent job gate
+  already fail closed. The maintainer supplies/reviews complete source before
+  future publication. No binaries are currently distributed.
+- Change descriptive project metadata only; dependencies, coverage, application,
+  tests and workflows remain unchanged. All work stays in the current checkout.
